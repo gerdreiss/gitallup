@@ -1,0 +1,5 @@
+*~
+*.swp
+*.lock
+tarballs/
+.stack-work/
