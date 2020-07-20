@@ -8,8 +8,8 @@ import           RIO.Process
 -- | Command line arguments
 data Options =
   Options
-    { optionsDirectory        :: !FilePath
-    , optionsVerbose :: !Bool
+    { optionsDirectory :: !FilePath
+    , optionsVerbose   :: !Bool
     }
 
 data App =
@@ -17,7 +17,6 @@ data App =
     { appLogFunc        :: !LogFunc
     , appProcessContext :: !ProcessContext
     , appOptions        :: !Options
-  -- Add other app-specific configuration information here
     }
 
 instance HasLogFunc App where

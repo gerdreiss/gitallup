@@ -28,7 +28,11 @@ main = do
      in runRIO app run
 
 options :: Parser Options
-options = Options
-  <$> strOption
-     (long "directory" <> short 'd' <> help "Root directory where to update all existing GIT repos" <> showDefault <> value "." <> metavar "PATH")
-  <*> switch (long "verbose" <> short 'v' <> help "Verbose output?")
+options =
+  Options <$>
+  strOption
+    (long "directory" <>
+     short 'd' <>
+     help "Root directory where to update all existing GIT repos" <>
+     showDefault <> value "." <> metavar "PATH") <*>
+  switch (long "verbose" <> short 'v' <> help "Verbose output?")

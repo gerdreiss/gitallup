@@ -13,4 +13,4 @@ run = do
   logInfo
     .  fromString
     $  "We're inside the application! Directory: "
-    ++ (optionsDirectory $ opts)
+    ++ optionsDirectory opts
