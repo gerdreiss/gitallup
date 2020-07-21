@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d5940113a82a82a13f721bb5a88728b3e88218b7ec11dfdcb0c7337950f3853a
+-- hash: 47baa2dd3059c193c0b22cab590b03be147cf0edd13e8ab2c0320f355267aa49
 
 name:           gitallup
 version:        0.1.0.0
@@ -38,6 +38,8 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.11 && <10
+    , directory
+    , filepath
     , optparse-applicative
     , rio >=0.1.12.0
   default-language: Haskell2010
@@ -51,6 +53,8 @@ executable gitallup-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.11 && <10
+    , directory
+    , filepath
     , gitallup
     , optparse-applicative
     , optparse-simple
@@ -68,6 +72,8 @@ test-suite gitallup-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.11 && <10
+    , directory
+    , filepath
     , gitallup
     , hspec
     , optparse-applicative
