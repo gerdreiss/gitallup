@@ -82,7 +82,8 @@ processBranch (ExitFailure code, _, err) =
     $ ["Failed listing branches with code", show code, " and error ", show err]
 
 isMasterBranch :: B.ByteString -> Bool
-isMasterBranch s = "* master" `elem` (lines . C8.unpack $ s)
+isMasterBranch s = "* master" `elem` branches
+  where branches = lines . C8.unpack $ s
 
 logRepo :: FilePath -> RIO App ()
 logRepo repo = logInfo . fromString $ "updating repo: " <> repo
