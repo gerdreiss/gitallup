@@ -12,13 +12,14 @@ import           System.Directory               ( listDirectory
                                                 )
 import           System.FilePath                ( (</>) )
 
+
 run :: RIO App ()
 run = do
   root   <- view directoryL
   master <- view masterL
   logInput root master
-  subs <- listSubdirectories
-  logInfo . fromString . concat $ "updating repos:" : map ("\n--> " ++) subs
+  subs <- listRepos
+  logRepos subs
 
 logInput :: FilePath -> Bool -> RIO App ()
 logInput root master =
@@ -26,14 +27,24 @@ logInput root master =
     . fromString
     . concat
     $ [ "Updating "
-      , if master then "master branches of the" else ""
-      , " GIT repos in "
-      , if root == "." then "current root" else root
+      , if master then "master branches of the " else " "
+      , "GIT repos in "
+      , resolveRoot root
       , "..."
       ]
 
-listSubdirectories :: RIO App [FilePath]
-listSubdirectories = do
+resolveRoot :: String -> String
+resolveRoot root | root == "."  = "current directory"
+                 | root == ".." = "parent directory"
+                 | root == "~"  = "home directory"
+                 | otherwise    = root
+
+logRepos :: [FilePath] -> RIO App ()
+logRepos subs =
+  logInfo . fromString . concat $ "updating repos:" : map ("\n--> " ++) subs
+
+listRepos :: RIO App [FilePath]
+listRepos = do
   root <- view directoryL
   liftIO $ do
     a <- makeAbsolute root

@@ -39,7 +39,7 @@ steps:
       # - none: Do not perform any alignment.
       #
       # Default: global.
-      align: group
+      align: file
 
       # The following options affect only import list alignment.
       #
@@ -62,7 +62,7 @@ steps:
       #   >     (concat, foldl, foldr, head, init, last, length)
       #
       # Default: after_alias
-      list_align: new_line
+      list_align: with_alias
 
       # Right-pad the module names to align imports in a group:
       #
