@@ -1,16 +1,20 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module Run
   ( run
-  )
-where
+  ) where
 
-import           Import
+import Import
 
 run :: RIO App ()
 run = do
-  App _ _ opts <- ask
-  logInfo
-    .  fromString
-    $  "We're inside the application! Directory: "
-    ++ optionsDirectory opts
+  directory <- view directoryL
+  master    <- view masterL
+  logInfo . fromString $ concat
+      [ "Updating "
+      , (if master then "master branches of the" else "")
+      , " GIT repos in "
+      , directory
+      , "..."
+      ]
