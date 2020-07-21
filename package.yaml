@@ -25,6 +25,7 @@ dependencies:
 - optparse-applicative
 - directory
 - filepath
+- bytestring
 
 ghc-options:
 - -Wall

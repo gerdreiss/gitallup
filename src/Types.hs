@@ -2,8 +2,11 @@
 
 module Types where
 
+import qualified Data.ByteString.Lazy          as B
 import           RIO
 import           RIO.Process
+
+type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
 
 -- | Command line arguments
 data Options =

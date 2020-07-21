@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 47baa2dd3059c193c0b22cab590b03be147cf0edd13e8ab2c0320f355267aa49
+-- hash: cb6b3627b4becde7336c28933c27df852ac5841b117b0f8dfa6e16ce878fa495
 
 name:           gitallup
 version:        0.1.0.0
@@ -27,7 +27,6 @@ source-repository head
 
 library
   exposed-modules:
-      Import
       Run
       Types
       Util
@@ -38,6 +37,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.11 && <10
+    , bytestring
     , directory
     , filepath
     , optparse-applicative
@@ -53,6 +53,7 @@ executable gitallup-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.11 && <10
+    , bytestring
     , directory
     , filepath
     , gitallup
@@ -72,6 +73,7 @@ test-suite gitallup-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.11 && <10
+    , bytestring
     , directory
     , filepath
     , gitallup

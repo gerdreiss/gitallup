@@ -5,11 +5,12 @@ module Main
   ( main
   ) where
 
-import Import
-import Options.Applicative
-import Options.Applicative.Simple
-import RIO.Process
-import Run
+import           Options.Applicative
+import           Options.Applicative.Simple
+import           RIO
+import           RIO.Process
+import           Run
+import           Types
 
 import qualified Paths_gitallup
 
