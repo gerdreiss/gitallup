@@ -61,25 +61,32 @@ updateRepo :: Bool -> FilePath -> RIO App ()
 updateRepo master repo = do
   logRepo repo
   liftIO $ setCurrentDirectory repo
-  proc "git" ["pull"] runProcess_
+  gitPull
   when master updateMasterBranch
 
 updateMasterBranch :: RIO App ()
-updateMasterBranch = do
-  result <- proc "git" ["branch"] readProcess
-  processBranch result
+updateMasterBranch = gitBranch >>= processBranch
 
 processBranch :: ReadProcessResult -> RIO App ()
 processBranch (ExitSuccess, out, _) = do
   unless (isMasterBranch out) $ do
     logInfo . fromString $ "Checkout and update master branch"
-    proc "git" ["checkout", "master"] runProcess_
-    proc "git" ["pull"]               runProcess_
+    gitCheckoutMaster
+    gitPull
 processBranch (ExitFailure code, _, err) =
   logError
     . fromString
     . concat
     $ ["Failed listing branches with code", show code, " and error ", show err]
+
+gitBranch :: RIO App ReadProcessResult
+gitBranch = proc "git" ["branch"] readProcess
+
+gitPull :: RIO App ()
+gitPull = proc "git" ["pull"] runProcess_
+
+gitCheckoutMaster :: RIO App ()
+gitCheckoutMaster = proc "git" ["checkout", "master"] runProcess_
 
 isMasterBranch :: B.ByteString -> Bool
 isMasterBranch s = "* master" `elem` branches
