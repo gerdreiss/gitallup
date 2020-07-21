@@ -25,18 +25,6 @@ run = do
   logInput master root
   listRepos >>= updateRepos master
 
-logInput :: Bool -> FilePath -> RIO App ()
-logInput master root =
-  logInfo
-    . fromString
-    . concat
-    $ [ "Updating "
-      , if master then "master branches of the " else " "
-      , "GIT repos in "
-      , resolveRoot root
-      , "..."
-      ]
-
 resolveRoot :: String -> String
 resolveRoot root | root == "."  = "current directory"
                  | root == ".." = "parent directory"
@@ -77,7 +65,7 @@ processBranch (ExitFailure code, _, err) =
   logError
     . fromString
     . concat
-    $ ["Failed listing branches with code ", show code, " and error ", show err]
+    $ ["Failed listing branches with code", show code, " and error ", show err]
 
 gitBranch :: RIO App ReadProcessResult
 gitBranch = proc "git" ["branch"] readProcess
@@ -91,6 +79,18 @@ gitCheckoutMaster = proc "git" ["checkout", "master"] runProcess_
 isMasterBranch :: B.ByteString -> Bool
 isMasterBranch s = "* master" `elem` branches
   where branches = lines . C8.unpack $ s
+
+logInput :: Bool -> FilePath -> RIO App ()
+logInput master root =
+  logInfo
+    . fromString
+    . concat
+    $ [ "Updating "
+      , if master then "master branches of the " else " "
+      , "GIT repos in "
+      , resolveRoot root
+      , "..."
+      ]
 
 logRepo :: FilePath -> RIO App ()
 logRepo repo = logInfo . fromString $ "updating repo: " <> repo
