@@ -31,9 +31,10 @@ options :: Parser Options
 options =
   Options <$>
   strOption
-    (long "directory" <>
-     short 'd' <>
+    (long "directory" <> short 'd' <>
      help "Root directory where to update all existing GIT repos" <>
-     showDefault <> value "." <> metavar "PATH") <*>
+     showDefault <>
+     value "." <>
+     metavar "PATH") <*>
   switch (long "master" <> short 'm' <> help "Switch all to master branch?") <*>
   switch (long "verbose" <> short 'v' <> help "Verbose output?")

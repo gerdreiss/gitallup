@@ -5,15 +5,18 @@ module Run
   ( run
   ) where
 
-import Import
+import           Import
 
 run :: RIO App ()
 run = do
   directory <- view directoryL
-  master    <- view masterL
-  logInfo . fromString $ concat
+  master <- view masterL
+  logInfo . fromString $
+    concat
       [ "Updating "
-      , (if master then "master branches of the" else "")
+      , if master
+          then "master branches of the"
+          else ""
       , " GIT repos in "
       , directory
       , "..."
