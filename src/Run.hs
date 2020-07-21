@@ -22,7 +22,7 @@ run :: RIO App ()
 run = do
   root   <- view directoryL
   master <- view masterL
-  _      <- logInput master root
+  logInput master root
   listRepos >>= updateRepos master
 
 logInput :: Bool -> FilePath -> RIO App ()
@@ -77,7 +77,7 @@ processBranch (ExitFailure code, _, err) =
   logError
     . fromString
     . concat
-    $ ["Failed listing branches with code", show code, " and error ", show err]
+    $ ["Failed listing branches with code ", show code, " and error ", show err]
 
 gitBranch :: RIO App ReadProcessResult
 gitBranch = proc "git" ["branch"] readProcess
