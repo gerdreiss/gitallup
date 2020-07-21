@@ -28,19 +28,20 @@ class HasMaster env where
 
 instance HasDirectory App where
   directoryL = appOptionsL . optionsDirectoryL
-    where
-      appOptionsL = lens appOptions (\x y -> x {appOptions = y})
-      optionsDirectoryL =
-        lens optionsDirectory (\x y -> x {optionsDirectory = y})
+   where
+    appOptionsL = lens appOptions (\x y -> x { appOptions = y })
+    optionsDirectoryL =
+      lens optionsDirectory (\x y -> x { optionsDirectory = y })
 
 instance HasMaster App where
   masterL = appOptionsL . optionsMasterL
-    where
-      appOptionsL = lens appOptions (\x y -> x {appOptions = y})
-      optionsMasterL = lens optionsMaster (\x y -> x {optionsMaster = y})
+   where
+    appOptionsL    = lens appOptions (\x y -> x { appOptions = y })
+    optionsMasterL = lens optionsMaster (\x y -> x { optionsMaster = y })
 
 instance HasLogFunc App where
-  logFuncL = lens appLogFunc (\x y -> x {appLogFunc = y})
+  logFuncL = lens appLogFunc (\x y -> x { appLogFunc = y })
 
 instance HasProcessContext App where
-  processContextL = lens appProcessContext (\x y -> x {appProcessContext = y})
+  processContextL =
+    lens appProcessContext (\x y -> x { appProcessContext = y })

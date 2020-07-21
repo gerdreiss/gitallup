@@ -3,7 +3,8 @@
 module Import
   ( module RIO
   , module Types
-  ) where
+  )
+where
 
 import           RIO
 import           Types
