@@ -7,18 +7,18 @@ module Run
 where
 
 import           Import
-import           System.Directory               ( listDirectory
+import           System.Directory               ( doesDirectoryExist
+                                                , listDirectory
                                                 , makeAbsolute
                                                 )
 import           System.FilePath                ( (</>) )
-
 
 run :: RIO App ()
 run = do
   root   <- view directoryL
   master <- view masterL
-  logInput root master
-  subs <- listRepos
+  _      <- logInput root master
+  subs   <- listRepos
   logRepos subs
 
 logInput :: FilePath -> Bool -> RIO App ()
@@ -47,6 +47,9 @@ listRepos :: RIO App [FilePath]
 listRepos = do
   root <- view directoryL
   liftIO $ do
-    a <- makeAbsolute root
-    s <- listDirectory a
-    return $ map (root </>) s
+    path <- makeAbsolute root
+    dirs <- map (root </>) <$> listDirectory path
+    filterM isGitRepo dirs
+
+isGitRepo :: FilePath -> IO Bool
+isGitRepo dir = doesDirectoryExist $ dir </> ".git"
