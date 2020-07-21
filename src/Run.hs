@@ -13,6 +13,7 @@ import           RIO.Process
 import           System.Directory               ( doesDirectoryExist
                                                 , listDirectory
                                                 , makeAbsolute
+                                                , setCurrentDirectory
                                                 )
 import           System.FilePath                ( (</>) )
 import           Types
@@ -22,8 +23,7 @@ run = do
   root   <- view directoryL
   master <- view masterL
   _      <- logInput master root
-  subs   <- listRepos
-  updateRepos master subs
+  listRepos >>= updateRepos master
 
 logInput :: Bool -> FilePath -> RIO App ()
 logInput master root =
@@ -48,7 +48,7 @@ listRepos = do
   root <- view directoryL
   liftIO $ do
     path <- makeAbsolute root
-    dirs <- map (root </>) <$> listDirectory path
+    dirs <- map (path </>) <$> listDirectory path
     filterM isGitRepo dirs
 
 isGitRepo :: FilePath -> IO Bool
@@ -60,21 +60,17 @@ updateRepos master = mapM_ (updateRepo master)
 updateRepo :: Bool -> FilePath -> RIO App ()
 updateRepo master repo = do
   logRepo repo
-  proc "cd"  [repo]   runProcess_ -- the "cd" does not work - we're staying in the working directory all the time
+  liftIO $ setCurrentDirectory repo
   proc "git" ["pull"] runProcess_
-  when master (updateMasterBranch repo)
+  when master updateMasterBranch
 
-updateMasterBranch :: FilePath -> RIO App ()
-updateMasterBranch repo = do
-  _      <- proc "cd" [repo] runProcess_
-  pwd    <- proc "pwd" [] readProcess
-  _      <- logInfo . fromString . show $ pwd
+updateMasterBranch :: RIO App ()
+updateMasterBranch = do
   result <- proc "git" ["branch"] readProcess
   processBranch result
 
 processBranch :: ReadProcessResult -> RIO App ()
 processBranch (ExitSuccess, out, _) = do
-  logInfo . fromString . C8.unpack $ out
   unless (isMasterBranch out) $ do
     logInfo . fromString $ "Checkout and update master branch"
     proc "git" ["checkout", "master"] runProcess_
@@ -86,7 +82,7 @@ processBranch (ExitFailure code, _, err) =
     $ ["Failed listing branches with code", show code, " and error ", show err]
 
 isMasterBranch :: B.ByteString -> Bool
-isMasterBranch s = elem "* master" (lines . C8.unpack $ s)
+isMasterBranch s = "* master" `elem` (lines . C8.unpack $ s)
 
 logRepo :: FilePath -> RIO App ()
 logRepo repo = logInfo . fromString $ "updating repo: " <> repo
