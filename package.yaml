@@ -1,10 +1,10 @@
 name:                gitallup
 version:             0.1.0.0
-github:              githubuser/gitallup
+github:              gerdreiss/gitallup
 license:             BSD3
 author:              Author name here
-maintainer:          example@example.com
-copyright:           2020 Author name here
+maintainer:          gerd@reiss.pro
+copyright:           2020 Gerd Reiss
 
 extra-source-files:
 - README.md
