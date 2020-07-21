@@ -21,12 +21,12 @@ run :: RIO App ()
 run = do
   root   <- view directoryL
   master <- view masterL
-  _      <- logInput root master
+  _      <- logInput master root
   subs   <- listRepos
   updateRepos master subs
 
-logInput :: FilePath -> Bool -> RIO App ()
-logInput root master =
+logInput :: Bool -> FilePath -> RIO App ()
+logInput master root =
   logInfo
     . fromString
     . concat
