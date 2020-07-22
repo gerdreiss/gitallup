@@ -1,14 +1,14 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Main ( main ) where
+module Main where
 
-import           Options.Applicative
-import           Options.Applicative.Simple
-import           RIO
-import           RIO.Process
-import           Run
-import           Types
+import Options.Applicative
+import Options.Applicative.Simple
+import RIO
+import RIO.Process
+import Run
+import Types
 
 import qualified Paths_gitallup
 
@@ -33,30 +33,34 @@ options = Options <$> directory <*> recursive <*> master <*> verbose
 directory :: Parser String
 directory =
   strOption
-    (long "directory" <>
-     short 'd' <>
-     help "Root directory where to update all existing GIT repos" <>
-     showDefault <>
-     value "." <>
-     metavar "PATH")
+    ( long "directory"
+        <> short 'd'
+        <> help "Root directory where to update all existing GIT repos"
+        <> showDefault
+        <> value "."
+        <> metavar "PATH"
+    )
 
 recursive :: Parser Bool
 recursive =
   switch
-    (long "recursive" <>
-     short 'r' <>
-     help "Go recursively through subdirectories which are not GIT repos?")
+    ( long "recursive"
+        <> short 'r'
+        <> help "Go recursively through subdirectories which are not GIT repos?"
+    )
 
 master :: Parser Bool
 master =
   switch
-    (long "master" <>
-     short 'm' <>
-     help "Switch all to master branch?")
+    ( long "master"
+        <> short 'm'
+        <> help "Switch all to master branch?"
+    )
 
 verbose :: Parser Bool
 verbose =
   switch
-    (long "verbose" <>
-     short 'v' <>
-     help "Verbose output?")
+    ( long "verbose"
+        <> short 'v'
+        <> help "Verbose output?"
+    )
