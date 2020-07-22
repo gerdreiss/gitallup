@@ -20,7 +20,7 @@ main = do
     simpleOptions
       $(simpleVersion Paths_gitallup.version)
       "Update all GIT repos in directory"
-      "Walks through all subdirectories of the given or current directory, and performs git pull"
+      "Walks through all subdirectories of the given or current directory, and performs git pull on all GIT repos"
       options
       empty
   lo <- logOptionsHandle stderr (optionsVerbose opts)
