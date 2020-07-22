@@ -39,7 +39,7 @@ steps:
       # - none: Do not perform any alignment.
       #
       # Default: global.
-      align: file
+      align: global
 
       # The following options affect only import list alignment.
       #
@@ -62,7 +62,7 @@ steps:
       #   >     (concat, foldl, foldr, head, init, last, length)
       #
       # Default: after_alias
-      list_align: with_alias
+      list_align: after_alias
 
       # Right-pad the module names to align imports in a group:
       #
@@ -104,7 +104,7 @@ steps:
       #   >     )
       #
       # Default: inline
-      long_list_align: new_line_multiline
+      long_list_align: inline
 
       # Align empty list (importing instances)
       #
@@ -218,12 +218,11 @@ columns: 80
 #
 # Default: native.
 newline: native
-
 # Sometimes, language extensions are specified in a cabal file or from the
 # command line instead of using language pragmas in the file. stylish-haskell
 # needs to be aware of these, so it can parse the file correctly.
 #
 # No language extensions are enabled by default.
 # language_extensions:
-  # - TemplateHaskell
-  # - QuasiQuotes
+# - TemplateHaskell
+# - QuasiQuotes
