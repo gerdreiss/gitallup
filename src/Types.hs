@@ -12,6 +12,7 @@ type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
 data Options =
   Options
     { optionsDirectory :: !FilePath
+    , optionsRecursive :: !Bool
     , optionsMaster    :: !Bool
     , optionsVerbose   :: !Bool
     }
