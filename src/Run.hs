@@ -29,17 +29,23 @@ run = do
 
 listRepos :: Bool -> FilePath -> RIO App [FilePath]
 listRepos recursive root = do
-  (repos, subs) <- liftIO $ do
-    path <- makeAbsolute root
-    dirs <- ifM (doesDirectoryExist path) (listDirectories path) (return [])
-    spanM isGitRepo dirs
-  nested <- if recursive && not (null subs)
-    then mapM (listRepos recursive) subs
-    else return []
-  return (repos ++ concat nested)
+  (repos, rest) <- listReposAndRest root
+  nested        <- listNestedRepos recursive rest
+  return (repos ++ nested)
+
+listReposAndRest :: FilePath -> RIO App ([FilePath], [FilePath])
+listReposAndRest root =
+  liftIO $ makeAbsolute root >>= listDirectories >>= spanM isGitRepo
 
 listDirectories :: FilePath -> IO [FilePath]
-listDirectories path = map (path </>) <$> listDirectory path
+listDirectories path = ifM (doesDirectoryExist path)
+                           (map (path </>) <$> listDirectory path)
+                           (return [])
+
+listNestedRepos :: Bool -> [FilePath] -> RIO App [FilePath]
+listNestedRepos recursive subdirs = if recursive && not (null subdirs)
+  then concat <$> mapM (listRepos recursive) subdirs
+  else return []
 
 updateRepos :: Bool -> [FilePath] -> RIO App ()
 updateRepos master = mapM_ (updateRepo master)
