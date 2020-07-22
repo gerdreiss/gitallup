@@ -43,9 +43,8 @@ listDirectories path = ifM (doesDirectoryExist path)
                            (return [])
 
 listNestedRepos :: Bool -> [FilePath] -> RIO App [FilePath]
-listNestedRepos recursive subdirs = if recursive && not (null subdirs)
-  then concat <$> mapM (listRepos recursive) subdirs
-  else return []
+listNestedRepos True subdirs@(_ : _) = concat <$> mapM (listRepos True) subdirs
+listNestedRepos _    _               = return []
 
 updateRepos :: Bool -> [FilePath] -> RIO App ()
 updateRepos master = mapM_ (updateRepo master)
