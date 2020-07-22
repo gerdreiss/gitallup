@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fbe87fcfb861b682c6b29f004df5eb6d3ede5a2b8e13d0eef421b857808cd496
+-- hash: 03637755510c0afc75f44f9057296a4fc6123fe77bc8daa3356128abfde0d4b9
 
 name:           gitallup
 version:        0.1.0.0
@@ -27,6 +27,8 @@ source-repository head
 
 library
   exposed-modules:
+      Git
+      Logging
       Run
       Types
       Util
