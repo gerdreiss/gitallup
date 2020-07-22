@@ -1,11 +1,7 @@
-module Git
-  ( isGitRepo
-  , gitBranch
-  , gitCheckoutMaster
-  , gitPull
-  )
-where
+module Git where
 
+import qualified Data.ByteString.Lazy          as B
+import qualified Data.ByteString.Lazy.Char8    as C8
 import           RIO
 import           RIO.Process                    ( proc
                                                 , readProcess
@@ -26,3 +22,7 @@ gitCheckoutMaster = proc "git" ["checkout", "master"] runProcess_
 
 gitPull :: RIO App ()
 gitPull = proc "git" ["pull"] runProcess_
+
+isMasterBranch :: B.ByteString -> Bool
+isMasterBranch s = "* master" `elem` branches
+  where branches = lines . C8.unpack $ s

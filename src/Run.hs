@@ -6,8 +6,6 @@ module Run
   )
 where
 
-import qualified Data.ByteString.Lazy          as B
-import qualified Data.ByteString.Lazy.Char8    as C8
 import           Git
 import           Logging
 import           RIO
@@ -40,10 +38,7 @@ updateRepo master repo = do
   logRepo repo
   liftIO (setCurrentDirectory repo)
   gitPull
-  when master updateMasterBranch
-
-updateMasterBranch :: RIO App ()
-updateMasterBranch = gitBranch >>= processBranch
+  when master (gitBranch >>= processBranch)
 
 processBranch :: ReadProcessResult -> RIO App ()
 processBranch (ExitSuccess, out, _) = unless (isMasterBranch out) $ do
@@ -55,8 +50,4 @@ processBranch (ExitFailure code, _, err) =
     . fromString
     . concat
     $ ["Failed listing branches with code ", show code, " and error ", show err]
-
-isMasterBranch :: B.ByteString -> Bool
-isMasterBranch s = "* master" `elem` branches
-  where branches = lines . C8.unpack $ s
 

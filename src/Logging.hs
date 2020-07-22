@@ -1,4 +1,8 @@
-module Logging where
+module Logging
+  ( logInput
+  , logRepo
+  )
+where
 
 import           RIO
 import           Types
