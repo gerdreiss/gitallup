@@ -26,6 +26,7 @@ dependencies:
 - directory
 - filepath
 - bytestring
+- extra
 
 ghc-options:
 - -Wall

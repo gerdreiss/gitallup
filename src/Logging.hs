@@ -17,7 +17,6 @@ logInput recursive master root =
       , if master then "master branches of the " else " "
       , "GIT repos in "
       , resolveRoot root
-      , "..."
       ]
 
 resolveRoot :: String -> String
