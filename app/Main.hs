@@ -1,9 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Main
-  ( main
-  ) where
+module Main ( main ) where
 
 import           Options.Applicative
 import           Options.Applicative.Simple
@@ -44,10 +42,21 @@ directory =
 
 recursive :: Parser Bool
 recursive =
-  switch (long "recursive" <> short 'r' <> help "Go recursively through subdirectories which are not GIT repos?")
+  switch
+    (long "recursive" <>
+     short 'r' <>
+     help "Go recursively through subdirectories which are not GIT repos?")
 
 master :: Parser Bool
-master = switch (long "master" <> short 'm' <> help "Switch all to master branch?")
+master =
+  switch
+    (long "master" <>
+     short 'm' <>
+     help "Switch all to master branch?")
 
 verbose :: Parser Bool
-verbose = switch (long "verbose" <> short 'v' <> help "Verbose output?")
+verbose =
+  switch
+    (long "verbose" <>
+     short 'v' <>
+     help "Verbose output?")
