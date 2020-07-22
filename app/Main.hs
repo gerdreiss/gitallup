@@ -30,14 +30,24 @@ main = do
      in runRIO app run
 
 options :: Parser Options
-options =
-  Options <$>
+options = Options <$> directory <*> recursive <*> master <*> verbose
+
+directory :: Parser String
+directory =
   strOption
     (long "directory" <>
      short 'd' <>
      help "Root directory where to update all existing GIT repos" <>
-     showDefault <> value "." <>
-     metavar "PATH") <*>
-  switch (long "recursive" <> short 'r' <> help "Go recursively through subdirectories which are not GIT repos?") <*>
-  switch (long "master" <> short 'm' <> help "Switch all to master branch?") <*>
-  switch (long "verbose" <> short 'v' <> help "Verbose output?")
+     showDefault <>
+     value "." <>
+     metavar "PATH")
+
+recursive :: Parser Bool
+recursive =
+  switch (long "recursive" <> short 'r' <> help "Go recursively through subdirectories which are not GIT repos?")
+
+master :: Parser Bool
+master = switch (long "master" <> short 'm' <> help "Switch all to master branch?")
+
+verbose :: Parser Bool
+verbose = switch (long "verbose" <> short 'v' <> help "Verbose output?")
