@@ -6,7 +6,9 @@ module Run
   )
 where
 
-import           Control.Monad.Extra            ( ifM )
+import           Control.Monad.Extra            ( ifM
+                                                , partitionM
+                                                )
 import           Git
 import           Logging
 import           RIO
@@ -17,7 +19,6 @@ import           System.Directory               ( doesDirectoryExist
                                                 )
 import           System.FilePath                ( (</>) )
 import           Types
-import           Util                           ( spanM )
 
 run :: RIO App ()
 run = do
@@ -35,7 +36,7 @@ listRepos recursive root = do
 
 listReposAndRest :: FilePath -> RIO App ([FilePath], [FilePath])
 listReposAndRest root =
-  liftIO $ makeAbsolute root >>= listDirectories >>= spanM isGitRepo
+  liftIO $ makeAbsolute root >>= listDirectories >>= partitionM isGitRepo
 
 listDirectories :: FilePath -> IO [FilePath]
 listDirectories path = ifM (doesDirectoryExist path)
