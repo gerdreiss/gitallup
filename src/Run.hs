@@ -40,7 +40,7 @@ listReposAndRest root =
 
 listDirectories :: FilePath -> IO [FilePath]
 listDirectories path = ifM (doesDirectoryExist path)
-                           (map (path </>) <$> listDirectory path)
+                           (fmap (path </>) <$> listDirectory path)
                            (return [])
 
 listNestedRepos :: Bool -> [FilePath] -> RIO App [FilePath]
