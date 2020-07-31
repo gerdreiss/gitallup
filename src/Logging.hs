@@ -1,8 +1,4 @@
-module Logging
-  ( logInput
-  , logRepo
-  )
-where
+module Logging where
 
 import           RIO
 import           Types
@@ -31,3 +27,10 @@ resolveRoot root | root == "."  = "current directory"
 
 logRepo :: FilePath -> RIO App ()
 logRepo repo = logInfo . fromString $ "updating repo: " <> repo
+
+logSuc :: String -> RIO App ()
+logSuc suc = logInfo . fromString $ "Success: " ++ suc
+
+logErr :: Int -> String -> RIO App ()
+logErr code err =
+  logError . fromString . concat $ ["Failed: ", show code, ": ", err]
