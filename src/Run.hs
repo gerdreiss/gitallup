@@ -24,14 +24,15 @@ run :: RIO App ()
 run = do
   root      <- view directoryL
   recursive <- view recursiveL
+  depth     <- view recursiveDepthL
   master    <- view masterL
-  logInput recursive master root
-  listRepos recursive root >>= updateRepos master
+  logInput recursive depth master root
+  listRepos recursive depth root >>= updateRepos master
 
-listRepos :: Bool -> FilePath -> RIO App [FilePath]
-listRepos recursive root = do
+listRepos :: Bool -> Int -> FilePath -> RIO App [FilePath]
+listRepos recursive depth root = do
   (repos, rest) <- listReposAndRest root
-  nested        <- listNestedRepos recursive rest
+  nested        <- listNestedRepos recursive depth rest
   return (repos ++ nested)
 
 listReposAndRest :: FilePath -> RIO App ([FilePath], [FilePath])
@@ -43,9 +44,12 @@ listDirectories path = ifM (doesDirectoryExist path)
                            (fmap (path </>) <$> listDirectory path)
                            (return [])
 
-listNestedRepos :: Bool -> [FilePath] -> RIO App [FilePath]
-listNestedRepos True subdirs@(_ : _) = concat <$> mapM (listRepos True) subdirs
-listNestedRepos _    _               = return []
+listNestedRepos :: Bool -> Int -> [FilePath] -> RIO App [FilePath]
+listNestedRepos recursive depth subdirs
+  | recursive && depth > 0 && (not . null $ subdirs)
+  = concat <$> mapM (listRepos True (depth - 1)) subdirs
+  | otherwise
+  = return []
 
 updateRepos :: Bool -> [FilePath] -> RIO App ()
 updateRepos master = mapM_ (updateRepo master)

@@ -10,10 +10,11 @@ type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
 
 data Options =
   Options
-    { optionsDirectory :: !FilePath
-    , optionsRecursive :: !Bool
-    , optionsMaster    :: !Bool
-    , optionsVerbose   :: !Bool
+    { optionsDirectory      :: !FilePath
+    , optionsRecursive      :: !Bool
+    , optionsRecursiveDepth :: !Int
+    , optionsMaster         :: !Bool
+    , optionsVerbose        :: !Bool
     }
 
 data App =
@@ -28,6 +29,9 @@ class HasDirectory env where
 
 class HasRecursive env where
   recursiveL :: Lens' env Bool
+
+class HasRecursiveDepth env where
+  recursiveDepthL :: Lens' env Int
 
 class HasMaster env where
   masterL :: Lens' env Bool
@@ -45,6 +49,13 @@ instance HasRecursive App where
     appOptionsL = lens appOptions (\x y -> x { appOptions = y })
     optionsRecursiveL =
       lens optionsRecursive (\x y -> x { optionsRecursive = y })
+
+instance HasRecursiveDepth App where
+  recursiveDepthL = appOptionsL . optionsRecursiveDepthL
+   where
+    appOptionsL = lens appOptions (\x y -> x { appOptions = y })
+    optionsRecursiveDepthL =
+      lens optionsRecursiveDepth (\x y -> x { optionsRecursiveDepth = y })
 
 instance HasMaster App where
   masterL = appOptionsL . optionsMasterL

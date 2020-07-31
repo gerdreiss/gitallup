@@ -3,12 +3,12 @@
 
 module Main where
 
-import Options.Applicative
-import Options.Applicative.Simple
-import RIO
-import RIO.Process
-import Run
-import Types
+import           Options.Applicative
+import           Options.Applicative.Simple
+import           RIO
+import           RIO.Process
+import           Run
+import           Types
 
 import qualified Paths_gitallup
 
@@ -28,14 +28,20 @@ main = do
      in runRIO app run
 
 options :: Parser Options
-options = Options <$> directory <*> recursive <*> master <*> verbose
+options =
+  Options
+    <$> directory
+    <*> recursive
+    <*> recursiveDepth
+    <*> master
+    <*> verbose
 
 directory :: Parser String
 directory =
   strOption
-    ( long "directory"
-        <> short 'd'
-        <> help "Root directory where to update all existing GIT repos"
+    ( long "path"
+        <> short 'p'
+        <> help "Path to directory where to update all existing GIT repos"
         <> showDefault
         <> value "."
         <> metavar "PATH"
@@ -48,6 +54,18 @@ recursive =
         <> short 'r'
         <> help "Go recursively through subdirectories which are not GIT repos?"
     )
+
+recursiveDepth :: Parser Int
+recursiveDepth =
+  option
+    auto
+      ( long "recurs-depth"
+          <> short 'd'
+          <> showDefault
+          <> value (-1) -- meaning the depth is not restricted
+          <> metavar "NUMBER"
+          <> help "The depth of directory recursion (ignored at the moment)"
+      )
 
 master :: Parser Bool
 master =
