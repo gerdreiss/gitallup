@@ -59,7 +59,7 @@ recursiveDepth :: Parser Int
 recursiveDepth =
   option
     auto
-      ( long "recurs-depth"
+      ( long "depth"
           <> short 'd'
           <> showDefault
           <> value (-1) -- -1 means the depth is not restricted
