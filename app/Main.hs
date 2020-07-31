@@ -62,9 +62,9 @@ recursiveDepth =
       ( long "recurs-depth"
           <> short 'd'
           <> showDefault
-          <> value (-1) -- meaning the depth is not restricted
+          <> value (-1) -- -1 means the depth is not restricted
           <> metavar "NUMBER"
-          <> help "The depth of directory recursion (ignored at the moment)"
+          <> help "The depth of directory recursion"
       )
 
 master :: Parser Bool
