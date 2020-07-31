@@ -5,7 +5,6 @@ import qualified Data.ByteString.Lazy.Char8    as C8
 import           RIO
 import           RIO.Process                    ( proc
                                                 , readProcess
-                                                , runProcess_
                                                 )
 import           System.Directory               ( doesDirectoryExist )
 import           System.FilePath                ( (</>) )
@@ -19,7 +18,8 @@ gitBranch :: RIO App ReadProcessResult
 gitBranch = proc "git" ["branch"] readProcess
 
 gitCheckoutMaster :: RIO App ()
-gitCheckoutMaster = proc "git" ["checkout", "master"] runProcess_
+gitCheckoutMaster =
+  proc "git" ["checkout", "master"] readProcess >>= _processResult
 
 gitPull :: RIO App ()
 gitPull = proc "git" ["pull"] readProcess >>= _processResult
