@@ -1,4 +1,11 @@
-module Git where
+module Git
+  ( isGitRepo
+  , gitBranch
+  , gitCheckoutMaster
+  , gitPull
+  , isMasterBranch
+  )
+where
 
 import qualified Data.ByteString.Lazy          as B
 import qualified Data.ByteString.Lazy.Char8    as C8
