@@ -70,5 +70,5 @@ processBranch (ExitFailure code, _, err) =
   logError
     . fromString
     . concat
-    $ ["Failed listing branches with code ", show code, " and error ", show err]
+    $ ["Failed listing branches: ", show code, " - ", show err]
 

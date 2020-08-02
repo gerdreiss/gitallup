@@ -10,7 +10,7 @@ import           RIO
 import           Types
 
 logInput :: Bool -> Int -> Bool -> FilePath -> RIO App ()
-logInput recursive depth master root =
+logInput recursive depth master path =
   logInfo
     . fromString
     . concat
@@ -18,11 +18,11 @@ logInput recursive depth master root =
       , recf recursive depth
       , masterf master
       , "GIT repos in "
-      , _resolveRoot root
+      , _resolvePath path
       ]
  where
-  recf r d = if r then "recursively " ++ recd d else " "
-  recd d = if d > -1 then "up to a depth of " ++ show d else ""
+  recf r d = if r then "recursively " ++ depf d else " "
+  depf d = if d > -1 then "up to a depth of " ++ show d else ""
   masterf m = if m then "master branches of the " else " "
 
 logRepo :: FilePath -> RIO App ()
@@ -35,9 +35,9 @@ logErr :: Int -> String -> RIO App ()
 logErr code err =
   logError . fromString . concat $ ["Failed: ", show code, ": ", err]
 
-_resolveRoot :: String -> String
-_resolveRoot root | root == "."  = "current directory"
-                  | root == ".." = "parent directory"
-                  | root == "~"  = "home directory"
-                  | otherwise    = root
+_resolvePath :: String -> String
+_resolvePath path | path == "."  = "current directory"
+                  | path == ".." = "parent directory"
+                  | path == "~"  = "home directory"
+                  | otherwise    = path
 
