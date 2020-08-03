@@ -12,11 +12,10 @@ plus2 :: Int -> Int
 plus2 = (+ 2)
 
 spanM :: (Monad m) => (a -> m Bool) -> [a] -> m ([a], [a])
-spanM _ []       = return ([], [])
-spanM p (x : xs) = ifM (p x) f g
+spanM _          []       = return ([], [])
+spanM predicateM (x : xs) = ifM (predicateM x) caseTrue caseFalse
  where
-  f = do
-    (with, without) <- spanM p xs
+  caseTrue  = do
+    (with, without) <- spanM predicateM xs
     return (x : with, without)
-  g = do
-    return ([], x : xs)
+  caseFalse = return ([], x : xs)

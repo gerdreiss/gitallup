@@ -15,25 +15,25 @@ logInput recursive depth master path =
     . fromString
     . concat
     $ [ "Updating "
-      , recf recursive depth
-      , masterf master
+      , mkStrRecursive recursive depth
+      , mkStrMaster master
       , "GIT repos in "
       , _resolvePath path
       ]
  where
-  recf r d = if r then "recursively " ++ depf d else " "
-  depf d = if d > -1 then "up to a depth of " ++ show d else ""
-  masterf m = if m then "master branches of the " else " "
+  mkStrRecursive r d = if r then "recursively " ++ mkStrDepth d else " "
+  mkStrDepth d = if d > -1 then "up to a depth of " ++ show d else ""
+  mkStrMaster m = if m then "master branches of the " else " "
 
 logRepo :: FilePath -> RIO App ()
 logRepo repo = logInfo . fromString $ "updating repo: " <> repo
 
 logSuc :: String -> RIO App ()
-logSuc suc = logInfo . fromString $ "Success: " ++ suc
+logSuc msg = logInfo . fromString $ "Success: " ++ msg
 
 logErr :: Int -> String -> RIO App ()
-logErr code err =
-  logError . fromString . concat $ ["Failed: ", show code, ": ", err]
+logErr code msg =
+  logError . fromString . concat $ ["Failed: ", show code, ": ", msg]
 
 _resolvePath :: String -> String
 _resolvePath path | path == "."  = "current directory"

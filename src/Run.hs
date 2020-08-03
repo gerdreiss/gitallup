@@ -46,7 +46,7 @@ listDirectories path = ifM (doesDirectoryExist path)
 
 listNestedRepos :: Bool -> Int -> [FilePath] -> RIO App [FilePath]
 listNestedRepos recursive depth subdirs
-  | recursive && depth > 0 && (not . null $ subdirs)
+  | recursive && depth /= 0 && (not . null $ subdirs)
   = concat <$> mapM (listRepos True (depth - 1)) subdirs
   | otherwise
   = return []
@@ -71,4 +71,3 @@ processBranch (ExitFailure code, _, err) =
     . fromString
     . concat
     $ ["Failed listing branches: ", show code, " - ", show err]
-
