@@ -21,7 +21,7 @@ main = do
       "Walks through all subdirectories of the given or current directory, and performs git pull on all GIT repos"
       options
       empty
-  lo <- logOptionsHandle stderr (optionsVerbose opts)
+  lo <- setLogUseColor True <$> logOptionsHandle stderr (optionsVerbose opts)
   pc <- mkDefaultProcessContext
   withLogFunc lo $ \lf ->
     let app = App {appLogFunc = lf, appProcessContext = pc, appOptions = opts}
