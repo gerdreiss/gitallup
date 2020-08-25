@@ -29,8 +29,7 @@ run = do
   master    <- view masterL
   exclude   <- view excludeL
   logInput recursive depth master exclude root
-  let excluded = splitOn "," exclude
-  listRepos recursive depth excluded root >>= updateRepos master
+  listRepos recursive depth (splitOn "," exclude) root >>= updateRepos master
 
 listRepos :: Bool -> Int -> [String] -> FilePath -> RIO App [FilePath]
 listRepos recursive depth excluded root = do
