@@ -9,6 +9,7 @@ where
 import           Control.Monad.Extra            ( ifM
                                                 , partitionM
                                                 )
+import           Data.List.Split
 import           Git
 import           Logging
 import           RIO
@@ -19,7 +20,6 @@ import           System.Directory               ( doesDirectoryExist
                                                 )
 import           System.FilePath                ( (</>) )
 import           Types
-import           Data.List.Split
 
 run :: RIO App ()
 run = do
