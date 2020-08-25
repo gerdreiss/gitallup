@@ -14,6 +14,7 @@ data Options =
     , optionsRecursive      :: !Bool
     , optionsRecursiveDepth :: !Int
     , optionsMaster         :: !Bool
+    , optionsExclude        :: !String
     , optionsVerbose        :: !Bool
     }
 
@@ -35,6 +36,9 @@ class HasRecursiveDepth env where
 
 class HasMaster env where
   masterL :: Lens' env Bool
+
+class HasExclude env where
+  excludeL :: Lens' env String
 
 instance HasDirectory App where
   directoryL = appOptionsL . optionsDirectoryL
@@ -62,6 +66,12 @@ instance HasMaster App where
    where
     appOptionsL    = lens appOptions (\x y -> x { appOptions = y })
     optionsMasterL = lens optionsMaster (\x y -> x { optionsMaster = y })
+
+instance HasExclude App where
+  excludeL = appOptionsL . optionsExcludeL
+   where
+    appOptionsL     = lens appOptions (\x y -> x { appOptions = y })
+    optionsExcludeL = lens optionsExclude (\x y -> x { optionsExclude = y })
 
 instance HasLogFunc App where
   logFuncL = lens appLogFunc (\x y -> x { appLogFunc = y })

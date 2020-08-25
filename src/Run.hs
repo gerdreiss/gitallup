@@ -26,17 +26,18 @@ run = do
   recursive <- view recursiveL
   depth     <- view recursiveDepthL
   master    <- view masterL
-  logInput recursive depth master root
-  listRepos recursive depth root >>= updateRepos master
+  exclude   <- view excludeL
+  logInput recursive depth master exclude root
+  listRepos recursive depth exclude root >>= updateRepos master
 
-listRepos :: Bool -> Int -> FilePath -> RIO App [FilePath]
-listRepos recursive depth root = do
-  (repos, rest) <- listReposAndRest root
-  nested        <- listNestedRepos recursive depth rest
+listRepos :: Bool -> Int -> String -> FilePath -> RIO App [FilePath]
+listRepos recursive depth exclude root = do
+  (repos, rest) <- listReposAndRest exclude root
+  nested        <- listNestedRepos recursive depth exclude rest
   return (repos ++ nested)
 
-listReposAndRest :: FilePath -> RIO App ([FilePath], [FilePath])
-listReposAndRest root =
+listReposAndRest :: String -> FilePath -> RIO App ([FilePath], [FilePath])
+listReposAndRest exclude root =
   liftIO $ makeAbsolute root >>= listDirectories >>= partitionM isGitRepo
 
 listDirectories :: FilePath -> IO [FilePath]
@@ -44,10 +45,10 @@ listDirectories path = ifM (doesDirectoryExist path)
                            (fmap (path </>) <$> listDirectory path)
                            (return [])
 
-listNestedRepos :: Bool -> Int -> [FilePath] -> RIO App [FilePath]
-listNestedRepos recursive depth subdirs
+listNestedRepos :: Bool -> Int -> String -> [FilePath] -> RIO App [FilePath]
+listNestedRepos recursive depth exclude subdirs
   | recursive && depth /= 0 && (not . null $ subdirs)
-  = concat <$> mapM (listRepos True (depth - 1)) subdirs
+  = concat <$> mapM (listRepos True (depth - 1) exclude) subdirs
   | otherwise
   = return []
 

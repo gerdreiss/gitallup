@@ -9,8 +9,8 @@ where
 import           RIO
 import           Types
 
-logInput :: Bool -> Int -> Bool -> FilePath -> RIO App ()
-logInput recursive depth master path =
+logInput :: Bool -> Int -> Bool -> FilePath -> String -> RIO App ()
+logInput recursive depth master exclude path =
   logInfo
     . fromString
     . concat
@@ -19,11 +19,13 @@ logInput recursive depth master path =
       , mkStrMaster master
       , "GIT repos in "
       , _resolvePath path
+      , mkStrExclude exclude
       ]
  where
   mkStrRecursive r d = if r then "recursively " ++ mkStrDepth d else " "
   mkStrDepth d = if d > -1 then "up to a depth of " ++ show d else ""
   mkStrMaster m = if m then "master branches of the " else " "
+  mkStrExclude x = if null x then " " else "excluding " ++ exclude
 
 logRepo :: FilePath -> RIO App ()
 logRepo repo = logInfo . fromString $ "updating repo: " <> repo
@@ -36,8 +38,8 @@ logErr code msg =
   logError . fromString . concat $ ["Failed: ", show code, ": ", msg]
 
 _resolvePath :: String -> String
-_resolvePath path | path == "."  = "current directory"
-                  | path == ".." = "parent directory"
-                  | path == "~"  = "home directory"
+_resolvePath path | path == "."  = "current directory "
+                  | path == ".." = "parent directory "
+                  | path == "~"  = "home directory "
                   | otherwise    = path
 

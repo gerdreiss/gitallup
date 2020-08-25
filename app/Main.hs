@@ -24,7 +24,7 @@ main = do
   lo <- setLogUseColor True <$> logOptionsHandle stderr (optionsVerbose opts)
   pc <- mkDefaultProcessContext
   withLogFunc lo $ \lf ->
-    let app = App {appLogFunc = lf, appProcessContext = pc, appOptions = opts}
+    let app = App { appLogFunc = lf, appProcessContext = pc, appOptions = opts }
      in runRIO app run
 
 options :: Parser Options
@@ -34,6 +34,7 @@ options =
     <*> recursive
     <*> recursiveDepth
     <*> master
+    <*> exclude
     <*> verbose
 
 directory :: Parser String
@@ -73,6 +74,15 @@ master =
     ( long "master"
         <> short 'm'
         <> help "Switch all to master branch?"
+    )
+
+exclude :: Parser String
+exclude =
+  strOption
+    ( long "exclude"
+        <> short 'x'
+        <> help "List of directories/repositories to be excluded from updating, comma separated"
+        <> metavar "LIST"
     )
 
 verbose :: Parser Bool
