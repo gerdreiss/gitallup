@@ -19,6 +19,7 @@ import           System.Directory               ( doesDirectoryExist
                                                 )
 import           System.FilePath                ( (</>) )
 import           Types
+import           Data.List.Split
 
 run :: RIO App ()
 run = do
@@ -28,27 +29,32 @@ run = do
   master    <- view masterL
   exclude   <- view excludeL
   logInput recursive depth master exclude root
-  listRepos recursive depth exclude root >>= updateRepos master
+  let excluded = splitOn "," exclude
+  listRepos recursive depth excluded root >>= updateRepos master
 
-listRepos :: Bool -> Int -> String -> FilePath -> RIO App [FilePath]
-listRepos recursive depth exclude root = do
-  (repos, rest) <- listReposAndRest exclude root
-  nested        <- listNestedRepos recursive depth exclude rest
+listRepos :: Bool -> Int -> [String] -> FilePath -> RIO App [FilePath]
+listRepos recursive depth excluded root = do
+  (repos, rest) <- listReposAndRest excluded root
+  nested        <- listNestedRepos recursive depth excluded rest
   return (repos ++ nested)
 
-listReposAndRest :: String -> FilePath -> RIO App ([FilePath], [FilePath])
-listReposAndRest exclude root =
-  liftIO $ makeAbsolute root >>= listDirectories >>= partitionM isGitRepo
+listReposAndRest :: [String] -> FilePath -> RIO App ([FilePath], [FilePath])
+listReposAndRest excluded root =
+  liftIO
+    $   makeAbsolute root
+    >>= listDirectories excluded
+    >>= partitionM isGitRepo
 
-listDirectories :: FilePath -> IO [FilePath]
-listDirectories path = ifM (doesDirectoryExist path)
-                           (fmap (path </>) <$> listDirectory path)
-                           (return [])
+listDirectories :: [String] -> FilePath -> IO [FilePath]
+listDirectories excluded path = ifM
+  (doesDirectoryExist path)
+  (fmap (path </>) . filter (`notElem` excluded) <$> listDirectory path)
+  (return [])
 
-listNestedRepos :: Bool -> Int -> String -> [FilePath] -> RIO App [FilePath]
-listNestedRepos recursive depth exclude subdirs
+listNestedRepos :: Bool -> Int -> [String] -> [FilePath] -> RIO App [FilePath]
+listNestedRepos recursive depth excluded subdirs
   | recursive && depth /= 0 && (not . null $ subdirs)
-  = concat <$> mapM (listRepos True (depth - 1) exclude) subdirs
+  = concat <$> mapM (listRepos True (depth - 1) excluded) subdirs
   | otherwise
   = return []
 

@@ -42,10 +42,10 @@ directory =
   strOption
     ( long "path"
         <> short 'p'
-        <> help "Path to directory where to update all existing GIT repos"
+        <> metavar "PATH"
         <> showDefault
         <> value "."
-        <> metavar "PATH"
+        <> help "Path to directory where to update all existing GIT repos"
     )
 
 recursive :: Parser Bool
@@ -62,9 +62,9 @@ recursiveDepth =
     auto
       ( long "depth"
           <> short 'd'
+          <> metavar "NUMBER"
           <> showDefault
           <> value (-1) -- -1 means the depth is not restricted
-          <> metavar "NUMBER"
           <> help "The depth of directory recursion"
       )
 
@@ -81,8 +81,9 @@ exclude =
   strOption
     ( long "exclude"
         <> short 'x'
-        <> help "List of directories/repositories to be excluded from updating, comma separated"
         <> metavar "LIST"
+        <> value ""
+        <> help "List of directories/repositories to be excluded from updating, comma separated"
     )
 
 verbose :: Parser Bool

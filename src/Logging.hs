@@ -23,7 +23,7 @@ logInput recursive depth master exclude path =
       ]
  where
   mkStrRecursive r d = if r then "recursively " ++ mkStrDepth d else " "
-  mkStrDepth d = if d > -1 then "up to a depth of " ++ show d else ""
+  mkStrDepth d = if d > -1 then "up to a depth of " ++ show d else " "
   mkStrMaster m = if m then "master branches of the " else " "
   mkStrExclude x = if null x then " " else "excluding " ++ exclude
 
@@ -41,5 +41,5 @@ _resolvePath :: String -> String
 _resolvePath path | path == "."  = "current directory "
                   | path == ".." = "parent directory "
                   | path == "~"  = "home directory "
-                  | otherwise    = path
+                  | otherwise    = path ++ " "
 
