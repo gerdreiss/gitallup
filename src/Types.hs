@@ -38,6 +38,9 @@ class HasRecursiveDepth env where
 class HasMaster env where
   masterL :: Lens' env Bool
 
+class HasForce env where
+  forceL :: Lens' env Bool
+
 class HasExclude env where
   excludeL :: Lens' env String
 
@@ -67,6 +70,12 @@ instance HasMaster App where
    where
     appOptionsL    = lens appOptions (\x y -> x { appOptions = y })
     optionsMasterL = lens optionsMaster (\x y -> x { optionsMaster = y })
+
+instance HasForce App where
+  forceL = appOptionsL . optionsForceL
+   where
+    appOptionsL   = lens appOptions (\x y -> x { appOptions = y })
+    optionsForceL = lens optionsForce (\x y -> x { optionsForce = y })
 
 instance HasExclude App where
   excludeL = appOptionsL . optionsExcludeL

@@ -6,8 +6,9 @@ With `stack exec -- gitallup-exe --help` to see this text:
   ~~~~
   Update all GIT repos in directory
 
-  Usage: gitallup [--version] [--help] [-p|--path PATH] [-r|--recursive]
-                  [-d|--depth NUMBER] [-m|--master] [-v|--verbose]
+  Usage: gitallup-exe [--version] [--help] [-p|--path PATH] [-r|--recursive] 
+                      [-d|--depth NUMBER] [-m|--master] [-f|--force] 
+                      [-x|--exclude LIST] [-v|--verbose]
     Walks through all subdirectories of the given or current directory, and
     performs git pull on all GIT repos
 
@@ -20,12 +21,11 @@ With `stack exec -- gitallup-exe --help` to see this text:
                             GIT repos?
     -d,--depth NUMBER        The depth of directory recursion (default: -1)
     -m,--master              Switch all to master branch?
-    -f,--force               Force update overriding any local changes (not yet
-                            implemented)?
+    -f,--force               Force update overriding any local changes?
     -x,--exclude LIST        List of directories/repositories to be excluded from
                             updating, comma separated
     -v,--verbose             Verbose output?
-    ~~~~  
+    ~~~~
 
 ## Run tests
 

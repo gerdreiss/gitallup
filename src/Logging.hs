@@ -6,15 +6,15 @@ module Logging
   )
 where
 
-import           RIO
+import           RIO                     hiding ( force )
 import           Types
 
-logInput :: Bool -> Int -> Bool -> FilePath -> String -> RIO App ()
-logInput recursive depth master exclude path =
+logInput :: Bool -> Int -> Bool -> Bool -> FilePath -> String -> RIO App ()
+logInput recursive depth master force exclude path =
   logInfo
     . fromString
     . concat
-    $ [ "Updating "
+    $ [ mkStrUpdate force
       , mkStrRecursive recursive depth
       , mkStrMaster master
       , "GIT repos in "
@@ -22,6 +22,7 @@ logInput recursive depth master exclude path =
       , mkStrExclude exclude
       ]
  where
+  mkStrUpdate f = if f then "Force updating " else "Updating "
   mkStrRecursive r d = if r then "recursively " ++ mkStrDepth d else " "
   mkStrDepth d = if d > -1 then "up to a depth of " ++ show d else " "
   mkStrMaster m = if m then "master branches of the " else " "

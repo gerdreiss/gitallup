@@ -82,7 +82,7 @@ force =
   switch
     ( long "force"
         <> short 'f'
-        <> help "Force update overriding any local changes (not yet implemented)?"
+        <> help "Force update overriding any local changes?"
     )
 
 exclude :: Parser String
