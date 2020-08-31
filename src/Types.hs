@@ -14,6 +14,7 @@ data Options =
     , optionsRecursive      :: !Bool
     , optionsRecursiveDepth :: !Int
     , optionsMaster         :: !Bool
+    , optionsForce          :: !Bool
     , optionsExclude        :: !String
     , optionsVerbose        :: !Bool
     }

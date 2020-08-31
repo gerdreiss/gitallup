@@ -5,7 +5,7 @@ module Main where
 
 import           Options.Applicative
 import           Options.Applicative.Simple
-import           RIO
+import           RIO hiding(force)
 import           RIO.Process
 import           Run
 import           Types
@@ -34,6 +34,7 @@ options =
     <*> recursive
     <*> recursiveDepth
     <*> master
+    <*> force
     <*> exclude
     <*> verbose
 
@@ -74,6 +75,14 @@ master =
     ( long "master"
         <> short 'm'
         <> help "Switch all to master branch?"
+    )
+
+force :: Parser Bool
+force =
+  switch
+    ( long "force"
+        <> short 'f'
+        <> help "Force update overriding any local changes (not yet implemented)?"
     )
 
 exclude :: Parser String

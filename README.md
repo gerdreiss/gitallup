@@ -15,13 +15,17 @@ With `stack exec -- gitallup-exe --help` to see this text:
     --version                Show version
     --help                   Show this help text
     -p,--path PATH           Path to directory where to update all existing GIT
-                             repos (default: ".")
+                            repos (default: ".")
     -r,--recursive           Go recursively through subdirectories which are not
-                             GIT repos?
+                            GIT repos?
     -d,--depth NUMBER        The depth of directory recursion (default: -1)
     -m,--master              Switch all to master branch?
-    -v,--verbose             Verbose output?  
-  ~~~~  
+    -f,--force               Force update overriding any local changes (not yet
+                            implemented)?
+    -x,--exclude LIST        List of directories/repositories to be excluded from
+                            updating, comma separated
+    -v,--verbose             Verbose output?
+    ~~~~  
 
 ## Run tests
 
