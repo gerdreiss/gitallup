@@ -4,6 +4,7 @@ module Git
   , gitCheckoutMaster
   , gitPull
   , gitFetchAll
+  , gitResetHard
   , isMasterBranch
   )
 where
@@ -34,6 +35,11 @@ gitPull = proc "git" ["pull"] readProcess >>= _processResult
 
 gitFetchAll :: RIO App ()
 gitFetchAll = proc "git" ["fetch", "--all"] readProcess >>= _processResult
+
+gitResetHard :: B.ByteString -> RIO App ()
+gitResetHard branch =
+  proc "git" ["reset", "--hard", "origin/" ++ C8.unpack branch] readProcess
+    >>= _processResult
 
 isMasterBranch :: B.ByteString -> Bool
 isMasterBranch s = "* master" `elem` branches
