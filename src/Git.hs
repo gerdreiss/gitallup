@@ -11,7 +11,13 @@ where
 
 import qualified Data.ByteString.Lazy          as B
 import qualified Data.ByteString.Lazy.Char8    as C8
-import           RIO
+
+import           RIO                            ( ExitCode
+                                                  ( ExitFailure
+                                                  , ExitSuccess
+                                                  )
+                                                , RIO
+                                                )
 import           RIO.Process                    ( proc
                                                 , readProcess
                                                 )
@@ -42,9 +48,12 @@ gitResetHard branch =
     >>= _processResult
 
 isMasterBranch :: B.ByteString -> Bool
-isMasterBranch s = "* master" `elem` branches
+isMasterBranch s = any (`elem` _masterBranches) branches
   where branches = lines . C8.unpack $ s
 
 _processResult :: ReadProcessResult -> RIO App ()
 _processResult (ExitSuccess     , out, _  ) = logSuc (C8.unpack out)
 _processResult (ExitFailure code, _  , err) = logErr code (C8.unpack err)
+
+_masterBranches :: [String]
+_masterBranches = ["* master", "* main"]

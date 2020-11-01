@@ -26,7 +26,3 @@ With `stack exec -- gitallup-exe --help` to see this text:
                             updating, comma separated
     -v,--verbose             Verbose output?
     ~~~~
-
-## Run tests
-
-`stack test`
