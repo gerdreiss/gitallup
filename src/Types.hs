@@ -15,7 +15,7 @@ data Options =
     , optionsRecursiveDepth :: !Int
     , optionsMaster         :: !Bool
     , optionsForce          :: !Bool
-    , optionsExclude        :: !String
+    , optionsExclude        :: !FilePath
     , optionsVerbose        :: !Bool
     }
 
@@ -42,7 +42,7 @@ class HasForce env where
   forceL :: Lens' env Bool
 
 class HasExclude env where
-  excludeL :: Lens' env String
+  excludeL :: Lens' env FilePath
 
 instance HasDirectory App where
   directoryL = appOptionsL . optionsDirectoryL
