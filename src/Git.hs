@@ -50,16 +50,17 @@ gitResetHard branch =
     >>= _processResult
 
 isMainBranch :: B.ByteString -> Bool
-isMainBranch s = any (`elem` _mainBranches) branches
+isMainBranch s = any (`elem` _mainBranches True) branches
   where branches = C8.lines s
 
 extractMainBranch :: B.ByteString -> Maybe B.ByteString
-extractMainBranch s = find (`elem` _mainBranches) branches
+extractMainBranch s = C8.drop 2 <$> find (`elem` _mainBranches False) branches
   where branches = C8.lines s
 
 _processResult :: ReadProcessResult -> RIO App ()
 _processResult (ExitSuccess     , out, _  ) = logSuc (C8.unpack out)
 _processResult (ExitFailure code, _  , err) = logErr code (C8.unpack err)
 
-_mainBranches :: [B.ByteString]
-_mainBranches = C8.pack <$> ["* main", "* master"]
+_mainBranches :: Bool -> [B.ByteString]
+_mainBranches prefixed = C8.pack <$> map prefix ["main", "master"]
+  where prefix = if prefixed then ("* " ++) else ("  " ++)
