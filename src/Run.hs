@@ -11,9 +11,6 @@ import qualified Data.ByteString.Lazy.Char8    as C8
 import           Control.Monad.Extra            ( ifM
                                                 , partitionM
                                                 )
-import           Data.List                      ( head
-                                                , isPrefixOf
-                                                )
 import           Data.List.Split
 import           Git
 import           Logging
@@ -25,6 +22,7 @@ import           System.Directory               ( doesDirectoryExist
                                                 )
 import           System.FilePath                ( (</>) )
 import           Types
+import           Data.List                      ( head )
 
 run :: RIO App ()
 run = do
@@ -76,16 +74,11 @@ updateRepo main force repo = do
   when main (gitBranch >>= processBranch)
 
 extractBranch :: ReadProcessResult -> RIO App B.ByteString
-extractBranch (ExitSuccess     , out, _  ) = return
-  ( C8.pack
-  . drop 2 -- remove "* " from branch name
-  . head -- GIT always returns the active branch prefixed with "* "
-  . filter ("* " `isPrefixOf`)
-  . lines
-  . C8.unpack
-  $ out
-  )
-extractBranch (ExitFailure code, _  , err) = do
+extractBranch (ExitSuccess, out, _) =
+  return . head . filter isPrefixed . C8.lines $ out
+  where isPrefixed = C8.isPrefixOf (C8.pack "* ")
+
+extractBranch (ExitFailure code, _, err) = do
   logWarn
     . fromString
     . concat
@@ -100,7 +93,7 @@ extractBranch (ExitFailure code, _  , err) = do
 processBranch :: ReadProcessResult -> RIO App ()
 processBranch (ExitSuccess, out, _) = unless (isMainBranch out) $ do
   logInfo . fromString $ "Checkout and update main/master branch"
-  maybe (logWrn "Main branch not found. Proceeding with current branch")
+  maybe (logWrn "Main branch not found. Proceeding with current branch...")
         gitCheckoutMain
         (extractMainBranch out)
   gitPull
