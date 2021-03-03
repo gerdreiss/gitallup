@@ -31,12 +31,12 @@ run = do
   root      <- view directoryL
   recursive <- view recursiveL
   depth     <- view recursiveDepthL
-  master    <- view masterL
+  main      <- view mainL
   force     <- view forceL
   exclude   <- view excludeL
-  logInput recursive depth master force exclude root
+  logInput recursive depth main force exclude root
   listRepos recursive depth (splitOn "," exclude) root
-    >>= updateRepos master force
+    >>= updateRepos main force
 
 listRepos :: Bool -> Int -> [String] -> FilePath -> RIO App [FilePath]
 listRepos recursive depth excluded root = do
@@ -65,15 +65,15 @@ listNestedRepos recursive depth excluded subdirs
   = return []
 
 updateRepos :: Bool -> Bool -> [FilePath] -> RIO App ()
-updateRepos master force = mapM_ (updateRepo master force)
+updateRepos main force = mapM_ (updateRepo main force)
 
 updateRepo :: Bool -> Bool -> FilePath -> RIO App ()
-updateRepo master force repo = do
+updateRepo main force repo = do
   logRepo repo
   liftIO (setCurrentDirectory repo)
   when force (gitBranch >>= extractBranch >>= gitResetHard)
   gitPull
-  when master (gitBranch >>= processBranch)
+  when main (gitBranch >>= processBranch)
 
 extractBranch :: ReadProcessResult -> RIO App B.ByteString
 extractBranch (ExitSuccess     , out, _  ) = return
@@ -93,14 +93,16 @@ extractBranch (ExitFailure code, _  , err) = do
       , show code
       , " - "
       , show err
-      , "\nReturning 'master'..."
+      , "\nReturning 'main'..."
       ]
-  return "master"
+  return "main"
 
 processBranch :: ReadProcessResult -> RIO App ()
-processBranch (ExitSuccess, out, _) = unless (isMasterBranch out) $ do
-  logInfo . fromString $ "Checkout and update master branch"
-  gitCheckoutMaster
+processBranch (ExitSuccess, out, _) = unless (isMainBranch out) $ do
+  logInfo . fromString $ "Checkout and update main/master branch"
+  maybe (logWrn "Main branch not found. Proceeding with current branch")
+        gitCheckoutMain
+        (extractMainBranch out)
   gitPull
 processBranch (ExitFailure code, _, err) =
   logError

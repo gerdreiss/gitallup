@@ -1,11 +1,12 @@
 module Git
   ( isGitRepo
   , gitBranch
-  , gitCheckoutMaster
+  , gitCheckoutMain
   , gitPull
   , gitFetchAll
   , gitResetHard
-  , isMasterBranch
+  , isMainBranch
+  , extractMainBranch
   )
 where
 
@@ -25,6 +26,7 @@ import           System.Directory               ( doesDirectoryExist )
 import           System.FilePath                ( (</>) )
 import           Types
 import           Logging
+import           Data.List                      ( find )
 
 isGitRepo :: FilePath -> IO Bool
 isGitRepo dir = doesDirectoryExist (dir </> ".git")
@@ -32,9 +34,9 @@ isGitRepo dir = doesDirectoryExist (dir </> ".git")
 gitBranch :: RIO App ReadProcessResult
 gitBranch = proc "git" ["branch"] readProcess
 
-gitCheckoutMaster :: RIO App ()
-gitCheckoutMaster =
-  proc "git" ["checkout", "master"] readProcess >>= _processResult
+gitCheckoutMain :: B.ByteString -> RIO App ()
+gitCheckoutMain branch =
+  proc "git" ["checkout", C8.unpack branch] readProcess >>= _processResult
 
 gitPull :: RIO App ()
 gitPull = proc "git" ["pull"] readProcess >>= _processResult
@@ -47,13 +49,17 @@ gitResetHard branch =
   proc "git" ["reset", "--hard", "origin/" ++ C8.unpack branch] readProcess
     >>= _processResult
 
-isMasterBranch :: B.ByteString -> Bool
-isMasterBranch s = any (`elem` _masterBranches) branches
-  where branches = lines . C8.unpack $ s
+isMainBranch :: B.ByteString -> Bool
+isMainBranch s = any (`elem` _mainBranches) branches
+  where branches = C8.lines s
+
+extractMainBranch :: B.ByteString -> Maybe B.ByteString
+extractMainBranch s = find (`elem` _mainBranches) branches
+  where branches = C8.lines s
 
 _processResult :: ReadProcessResult -> RIO App ()
 _processResult (ExitSuccess     , out, _  ) = logSuc (C8.unpack out)
 _processResult (ExitFailure code, _  , err) = logErr code (C8.unpack err)
 
-_masterBranches :: [String]
-_masterBranches = ["* master", "* main"]
+_mainBranches :: [B.ByteString]
+_mainBranches = C8.pack <$> ["* main", "* master"]

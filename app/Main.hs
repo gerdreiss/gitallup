@@ -33,7 +33,7 @@ options =
     <$> directory
     <*> recursive
     <*> recursiveDepth
-    <*> master
+    <*> mainBranch
     <*> force
     <*> exclude
     <*> verbose
@@ -69,12 +69,12 @@ recursiveDepth =
           <> help "The depth of directory recursion"
       )
 
-master :: Parser Bool
-master =
+mainBranch :: Parser Bool
+mainBranch =
   switch
-    ( long "master"
+    ( long "main-branch"
         <> short 'm'
-        <> help "Switch all to master branch?"
+        <> help "Switch all to main resp. master branch?"
     )
 
 force :: Parser Bool

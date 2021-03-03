@@ -1,8 +1,8 @@
 name: gitallup
-version: 0.1.0.0
+version: 0.2.0.0
 github: gerdreiss/gitallup
 license: BSD3
-author: Author name here
+author: Gerd Reiss
 maintainer: gerd@reiss.pro
 copyright: 2020 Gerd Reiss
 
@@ -42,25 +42,12 @@ library:
   source-dirs: src
 
 executables:
-  gitallup-exe:
+  gitallup:
     main: Main.hs
     source-dirs: app
     dependencies:
       - gitallup
       - optparse-simple
-
-    ghc-options:
-      - -threaded
-      - -rtsopts
-      - -with-rtsopts=-N
-
-tests:
-  gitallup-test:
-    main: Spec.hs
-    source-dirs: test
-    dependencies:
-      - gitallup
-      - hspec
 
     ghc-options:
       - -threaded

@@ -13,7 +13,7 @@ data Options =
     { optionsDirectory      :: !FilePath
     , optionsRecursive      :: !Bool
     , optionsRecursiveDepth :: !Int
-    , optionsMaster         :: !Bool
+    , optionsMain           :: !Bool
     , optionsForce          :: !Bool
     , optionsExclude        :: !FilePath
     , optionsVerbose        :: !Bool
@@ -35,8 +35,8 @@ class HasRecursive env where
 class HasRecursiveDepth env where
   recursiveDepthL :: Lens' env Int
 
-class HasMaster env where
-  masterL :: Lens' env Bool
+class HasMain env where
+  mainL :: Lens' env Bool
 
 class HasForce env where
   forceL :: Lens' env Bool
@@ -65,11 +65,11 @@ instance HasRecursiveDepth App where
     optionsRecursiveDepthL =
       lens optionsRecursiveDepth (\x y -> x { optionsRecursiveDepth = y })
 
-instance HasMaster App where
-  masterL = appOptionsL . optionsMasterL
+instance HasMain App where
+  mainL = appOptionsL . optionsMainL
    where
-    appOptionsL    = lens appOptions (\x y -> x { appOptions = y })
-    optionsMasterL = lens optionsMaster (\x y -> x { optionsMaster = y })
+    appOptionsL  = lens appOptions (\x y -> x { appOptions = y })
+    optionsMainL = lens optionsMain (\x y -> x { optionsMain = y })
 
 instance HasForce App where
   forceL = appOptionsL . optionsForceL

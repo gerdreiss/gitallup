@@ -1,17 +1,17 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.2.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0051c788eacc537473b7f7b24f87d1223439cdf00ebcf0ed26bff4be2cf76189
+-- hash: 78311fcc820825a7056659d8669b0c08a727cad4a32650f4f1004b7c15a18713
 
 name:           gitallup
-version:        0.1.0.0
+version:        0.2.0.0
 description:    Please see the README on Github at <https://github.com/githubuser/gitallup#readme>
 homepage:       https://github.com/gerdreiss/gitallup#readme
 bug-reports:    https://github.com/gerdreiss/gitallup/issues
-author:         Author name here
+author:         Gerd Reiss
 maintainer:     gerd@reiss.pro
 copyright:      2020 Gerd Reiss
 license:        BSD3
@@ -48,7 +48,7 @@ library
     , split
   default-language: Haskell2010
 
-executable gitallup-exe
+executable gitallup
   main-is: Main.hs
   other-modules:
       Paths_gitallup
@@ -64,28 +64,6 @@ executable gitallup-exe
     , gitallup
     , optparse-applicative
     , optparse-simple
-    , rio >=0.1.12.0
-    , split
-  default-language: Haskell2010
-
-test-suite gitallup-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      UtilSpec
-      Paths_gitallup
-  hs-source-dirs:
-      test
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base >=4.11 && <10
-    , bytestring
-    , directory
-    , extra
-    , filepath
-    , gitallup
-    , hspec
-    , optparse-applicative
     , rio >=0.1.12.0
     , split
   default-language: Haskell2010
