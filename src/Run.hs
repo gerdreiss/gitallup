@@ -77,14 +77,13 @@ extractBranch :: ReadProcessResult -> RIO App B.ByteString
 extractBranch (ExitSuccess, out, _) =
   return . head . filter isPrefixed . C8.lines $ out
   where isPrefixed = C8.isPrefixOf (C8.pack "* ")
-
 extractBranch (ExitFailure code, _, err) = do
   logWarn
     . fromString
     . concat
-    $ [ "Failed extracting branch: "
+    $ [ "Extracting branch with failed error "
       , show code
-      , " - "
+      , ": "
       , show err
       , "\nReturning 'main'..."
       ]
