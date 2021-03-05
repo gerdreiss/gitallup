@@ -56,7 +56,8 @@ logRes :: B.ByteString -> GitOpResult -> RIO App ()
 logRes msg = logResS (C8.unpack msg)
 
 logResS :: String -> GitOpResult -> RIO App ()
-logResS msg res = logInfo . fromString . concat $ ["Success: ", msg, show res]
+logResS msg res =
+  logInfo . fromString . concat $ ["Success: ", msg, " ", show res]
 
 logErrE :: GitOpError -> RIO App ()
 logErrE e = logErr (errorCode e) (errorMessage e)

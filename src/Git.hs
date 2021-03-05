@@ -14,23 +14,14 @@ where
 import qualified Data.ByteString.Lazy          as B
 import qualified Data.ByteString.Lazy.Char8    as C8
 
-import           RIO                            ( ExitCode
-                                                  ( ExitFailure
-                                                  , ExitSuccess
-                                                  )
-                                                , RIO
-                                                )
+import           Data.List                      ( find )
+import           RIO
 import           RIO.Process                    ( proc
                                                 , readProcess
                                                 )
 import           System.Directory               ( doesDirectoryExist )
 import           System.FilePath                ( (</>) )
-import           Types                          ( App
-                                                , GitOpError(GitOpError)
-                                                , GitOpResult(..)
-                                                , ReadProcessResult
-                                                )
-import           Data.List                      ( find )
+import           Types
 
 --
 --
@@ -80,8 +71,7 @@ isGitRepo :: FilePath -> IO Bool
 isGitRepo dir = doesDirectoryExist (dir </> ".git")
 
 isMainBranch :: B.ByteString -> Bool
-isMainBranch s = any (`elem` _mainBranches) branches
-  where branches = C8.lines s
+isMainBranch branch = branch `elem` _mainBranches
 
 -- 
 -- 

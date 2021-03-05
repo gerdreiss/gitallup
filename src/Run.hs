@@ -110,22 +110,36 @@ _checkCurrentSwitchUpdate repo =
  where
   processCurrentBranch branch = maybe
     (Log.errorMsgS $ concat ["Repo", repo, "has no current branch (WTF?)"])
-    (_switchUpdate repo)
+    (_checkIsMainSwitchUpdate repo)
     branch
 
-_switchUpdate :: FilePath -> B.ByteString -> RIO App ()
-_switchUpdate repo branch =
-  unless (Git.isMainBranch branch)
-    $  _switchBranch repo branch
-    >> _updateBranch repo
+_checkIsMainSwitchUpdate :: FilePath -> B.ByteString -> RIO App ()
+_checkIsMainSwitchUpdate repo branch =
+  unless (Git.isMainBranch branch) $ _checkMainSwitchUpdate repo
 
-_switchBranch :: FilePath -> C8.ByteString -> RIO App ()
-_switchBranch repo branch = Log.debugMsgS "Trying to switch branch..." >> do
+_checkMainSwitchUpdate :: FilePath -> RIO App ()
+_checkMainSwitchUpdate repo =
+  Log.logMsgS "Trying to switch to main branch..." >> do
+    res <- Git.mainBranch repo
+    either Log.logErrE processMainBranch res
+ where
+  processMainBranch branch = maybe
+    (Log.errorMsgS $ concat ["Repo", repo, "has no main branch (WTF?)"])
+    (_switchUpdateMain repo)
+    branch
+
+_switchUpdateMain :: FilePath -> B.ByteString -> RIO App ()
+_switchUpdateMain repo branch = do
   res <- Git.switchBranch repo branch
   -- TODO write result to app
-  either Log.logErrE
-         (\_ -> Log.logResS "Switch to main repo " GeneralSuccess)
-         res
+  either
+    Log.logErrE
+    (\_ ->
+      Log.logResS ("Switch to branch " ++ C8.unpack branch ++ " ")
+                  GeneralSuccess
+        >> _updateBranch repo
+    )
+    res
 
 _updateBranch :: FilePath -> RIO App ()
 _updateBranch repo = Log.debugMsgS "Trying to update branch..." >> do
