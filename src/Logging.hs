@@ -39,7 +39,7 @@ logSuc msg = logInfo . fromString $ "Success: " ++ msg
 
 logErr :: Int -> String -> RIO App ()
 logErr code msg =
-  logError . fromString . concat $ ["Failed: ", show code, ": ", msg]
+  logError . fromString . concat $ ["Failed: ", show code, " - ", msg]
 
 logWrn :: String -> RIO App ()
 logWrn msg = logInfo . fromString $ "Warning: " ++ msg

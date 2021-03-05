@@ -8,6 +8,14 @@ import           RIO.Process
 
 type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
 
+-- TODO will eventually be extended?..
+data GitOpResult = Updated | UpToDate | GeneralSuccess
+data GitOpError =
+  GitOpError
+    { errorCode    :: !Int
+    , errorMessage :: !B.ByteString
+    }
+
 data Options =
   Options
     { optionsDirectory      :: !FilePath
