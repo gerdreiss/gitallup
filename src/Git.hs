@@ -1,7 +1,7 @@
 module Git
   ( isGitRepo
   , gitBranch
-  , gitCheckoutMain
+  , gitCheckoutBranch
   , gitPull
   , gitFetchAll
   , gitResetHard
@@ -34,8 +34,8 @@ isGitRepo dir = doesDirectoryExist (dir </> ".git")
 gitBranch :: RIO App ReadProcessResult
 gitBranch = proc "git" ["branch"] readProcess
 
-gitCheckoutMain :: B.ByteString -> RIO App ()
-gitCheckoutMain branch =
+gitCheckoutBranch :: B.ByteString -> RIO App ()
+gitCheckoutBranch branch =
   proc "git" ["checkout", C8.unpack branch] readProcess >>= _processResult
 
 gitPull :: RIO App ()
@@ -62,5 +62,5 @@ _processResult (ExitSuccess     , out, _  ) = logSuc (C8.unpack out)
 _processResult (ExitFailure code, _  , err) = logErr code (C8.unpack err)
 
 _mainBranches :: Bool -> [B.ByteString]
-_mainBranches prefixed = C8.pack <$> map prefix ["main", "master"]
-  where prefix = if prefixed then ("* " ++) else ("  " ++)
+_mainBranches selected = C8.pack <$> map prefix ["main", "master"]
+  where prefix = if selected then ("* " ++) else ("  " ++)

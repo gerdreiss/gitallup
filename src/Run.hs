@@ -93,7 +93,7 @@ processBranch :: ReadProcessResult -> RIO App ()
 processBranch (ExitSuccess, out, _) = unless (isMainBranch out) $ do
   logInfo . fromString $ "Checkout and update main/master branch"
   maybe (logWrn "Main branch not found. Proceeding with current branch...")
-        gitCheckoutMain
+        gitCheckoutBranch
         (extractMainBranch out)
   gitPull
 processBranch (ExitFailure code, _, err) =
