@@ -6,8 +6,6 @@ module Run
   )
 where
 
-import qualified Data.ByteString.Lazy          as B
-import qualified Data.ByteString.Lazy.Char8    as C8
 import           Control.Monad.Extra            ( ifM
                                                 , partitionM
                                                 )
@@ -22,7 +20,6 @@ import           System.Directory               ( doesDirectoryExist
                                                 )
 import           System.FilePath                ( (</>) )
 import           Types
-import           Data.List                      ( head )
 
 run :: RIO App ()
 run = do
@@ -69,34 +66,18 @@ updateRepo :: Bool -> Bool -> FilePath -> RIO App ()
 updateRepo main force repo = do
   logRepo repo
   liftIO (setCurrentDirectory repo)
-  when force (gitBranch >>= extractBranch >>= gitResetHard)
+  when force gitResetHard -- TODO when force rollbackCurrentBranch
   gitPull
-  when main (gitBranch >>= processBranch)
+  when main (gitBranch >>= updateMainBranch)
 
-extractBranch :: ReadProcessResult -> RIO App B.ByteString
-extractBranch (ExitSuccess, out, _) =
-  return . head . filter isPrefixed . C8.lines $ out
-  where isPrefixed = C8.isPrefixOf (C8.pack "* ")
-extractBranch (ExitFailure code, _, err) = do
-  logWarn
-    . fromString
-    . concat
-    $ [ "Extracting branch with failed error "
-      , show code
-      , ": "
-      , show err
-      , "\nReturning 'main'..."
-      ]
-  return "main"
-
-processBranch :: ReadProcessResult -> RIO App ()
-processBranch (ExitSuccess, out, _) = unless (isMainBranch out) $ do
+updateMainBranch :: ReadProcessResult -> RIO App ()
+updateMainBranch (ExitSuccess, out, _) = unless (isMainBranch out) $ do
   logInfo . fromString $ "Checkout and update main/master branch"
   maybe (logWrn "Main branch not found. Proceeding with current branch...")
         gitCheckoutBranch
         (extractMainBranch out)
   gitPull
-processBranch (ExitFailure code, _, err) =
+updateMainBranch (ExitFailure code, _, err) =
   logError
     . fromString
     . concat

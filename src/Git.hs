@@ -54,7 +54,7 @@ switchBranch :: B.ByteString -> RIO App (Either GitOpError ())
 switchBranch b = _extractGitOpErrorOrUnit <$> gitSwitchBranch b
 
 updateBranch :: RIO App (Either GitOpError GitOpResult)
-updateBranch = gitFetchAll0 >> _extractGitOpErrorOrResult <$> gitPull0
+updateBranch = _gitFetchAll >> _extractGitOpErrorOrResult <$> _gitPull
 
 --
 --
@@ -73,17 +73,19 @@ isMainBranch s = any (`elem` _mainBranches True) branches
 -- GIT basic ops
 --
 
+-- TODO make private
 gitBranch :: RIO App ReadProcessResult
 gitBranch = proc "git" ["branch"] readProcess
 
+-- TODO make private
 gitSwitchBranch :: B.ByteString -> RIO App ReadProcessResult
 gitSwitchBranch b = proc "git" ["switch", C8.unpack b] readProcess
 
-gitPull0 :: RIO App ReadProcessResult
-gitPull0 = proc "git" ["pull"] readProcess
+_gitPull :: RIO App ReadProcessResult
+_gitPull = proc "git" ["pull"] readProcess
 
-gitFetchAll0 :: RIO App ReadProcessResult
-gitFetchAll0 = proc "git" ["fetch", "--all"] readProcess
+_gitFetchAll :: RIO App ReadProcessResult
+_gitFetchAll = proc "git" ["fetch", "--all"] readProcess
 
 --
 -- 
@@ -100,10 +102,9 @@ gitCheckoutBranch :: B.ByteString -> RIO App ()
 gitCheckoutBranch branch =
   proc "git" ["checkout", C8.unpack branch] readProcess >>= _processResult
 
-gitResetHard :: B.ByteString -> RIO App ()
-gitResetHard branch =
-  proc "git" ["reset", "--hard", "origin/" ++ C8.unpack branch] readProcess
-    >>= _processResult
+gitResetHard :: RIO App ()
+gitResetHard =
+  proc "git" ["reset", "--hard", "origin/HEAD"] readProcess >>= _processResult
 
 extractMainBranch :: B.ByteString -> Maybe B.ByteString
 extractMainBranch s = C8.drop 2 <$> find (`elem` _mainBranches False) branches
