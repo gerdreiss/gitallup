@@ -97,3 +97,8 @@ instance HasLogFunc App where
 instance HasProcessContext App where
   processContextL =
     lens appProcessContext (\x y -> x { appProcessContext = y })
+
+instance Show GitOpResult where
+  show Updated        = "updated successfully."
+  show UpToDate       = "already up to date."
+  show GeneralSuccess = "successful."

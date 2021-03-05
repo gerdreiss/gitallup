@@ -3,18 +3,11 @@ module Git
   , currentBranch
   , mainBranch
   , switchBranch
+  , resetHard
   , updateBranch
-  -- Utilities
+  , isDirty
   , isGitRepo
   , isMainBranch
-  -- Basic functions
-  , gitBranch
-  -- Deprecated functions
-  , gitPull
-  , gitFetchAll
-  , gitCheckoutBranch
-  , gitResetHard
-  , extractMainBranch
   )
 where
 
@@ -32,8 +25,11 @@ import           RIO.Process                    ( proc
                                                 )
 import           System.Directory               ( doesDirectoryExist )
 import           System.FilePath                ( (</>) )
-import           Types
-import           Logging
+import           Types                          ( App
+                                                , GitOpError(GitOpError)
+                                                , GitOpResult(..)
+                                                , ReadProcessResult
+                                                )
 import           Data.List                      ( find )
 
 --
@@ -41,20 +37,39 @@ import           Data.List                      ( find )
 -- Main module functions
 -- 
 
-listBranches :: RIO App (Either GitOpError [B.ByteString])
-listBranches = _extractBranchList <$> gitBranch
+listBranches :: FilePath -> RIO App (Either GitOpError [B.ByteString])
+listBranches repo =
+  _extractBranchList <$> proc "git" ["-C", repo, "branch"] readProcess
 
-currentBranch :: RIO App (Either GitOpError (Maybe B.ByteString))
-currentBranch = _extractCurrentBranch <$> gitBranch
+currentBranch :: FilePath -> RIO App (Either GitOpError (Maybe B.ByteString))
+currentBranch repo =
+  _extractCurrentBranch <$> proc "git" ["-C", repo, "branch"] readProcess
 
-mainBranch :: RIO App (Either GitOpError (Maybe B.ByteString))
-mainBranch = _extractMainBranch <$> gitBranch
+mainBranch :: FilePath -> RIO App (Either GitOpError (Maybe B.ByteString))
+mainBranch repo =
+  _extractMainBranch <$> proc "git" ["-C", repo, "branch"] readProcess
 
-switchBranch :: B.ByteString -> RIO App (Either GitOpError ())
-switchBranch b = _extractGitOpErrorOrUnit <$> gitSwitchBranch b
+switchBranch :: FilePath -> B.ByteString -> RIO App (Either GitOpError ())
+switchBranch repo branch =
+  _extractGitOpErrorOrUnit
+    <$> proc "git" ["-C", repo, "checkout", C8.unpack branch] readProcess
 
-updateBranch :: RIO App (Either GitOpError GitOpResult)
-updateBranch = _gitFetchAll >> _extractGitOpErrorOrResult <$> _gitPull
+updateBranch :: FilePath -> RIO App (Either GitOpError GitOpResult)
+updateBranch repo =
+  proc "git" ["-C", repo, "fetch", "--all"] readProcess
+    >>  _extractGitOpErrorOrResult
+    <$> proc "git" ["-C", repo, "pull"] readProcess
+
+resetHard :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpResult)
+resetHard repo branch =
+  _extractGitOpErrorOrResult
+    <$> proc "git"
+             ["-C", repo, "reset", "--hard", "origin/" ++ C8.unpack branch]
+             readProcess
+
+isDirty :: FilePath -> RIO App (Either GitOpError Bool)
+isDirty repo =
+  _extractBranchIsDirty <$> proc "git" ["-C", repo, "status"] readProcess
 
 --
 --
@@ -65,49 +80,7 @@ isGitRepo :: FilePath -> IO Bool
 isGitRepo dir = doesDirectoryExist (dir </> ".git")
 
 isMainBranch :: B.ByteString -> Bool
-isMainBranch s = any (`elem` _mainBranches True) branches
-  where branches = C8.lines s
-
---
---
--- GIT basic ops
---
-
--- TODO make private
-gitBranch :: RIO App ReadProcessResult
-gitBranch = proc "git" ["branch"] readProcess
-
--- TODO make private
-gitSwitchBranch :: B.ByteString -> RIO App ReadProcessResult
-gitSwitchBranch b = proc "git" ["switch", C8.unpack b] readProcess
-
-_gitPull :: RIO App ReadProcessResult
-_gitPull = proc "git" ["pull"] readProcess
-
-_gitFetchAll :: RIO App ReadProcessResult
-_gitFetchAll = proc "git" ["fetch", "--all"] readProcess
-
---
--- 
--- Deprecated functions
---
-
-gitPull :: RIO App ()
-gitPull = proc "git" ["pull"] readProcess >>= _processResult
-
-gitFetchAll :: RIO App ()
-gitFetchAll = proc "git" ["fetch", "--all"] readProcess >>= _processResult
-
-gitCheckoutBranch :: B.ByteString -> RIO App ()
-gitCheckoutBranch branch =
-  proc "git" ["checkout", C8.unpack branch] readProcess >>= _processResult
-
-gitResetHard :: RIO App ()
-gitResetHard =
-  proc "git" ["reset", "--hard", "origin/HEAD"] readProcess >>= _processResult
-
-extractMainBranch :: B.ByteString -> Maybe B.ByteString
-extractMainBranch s = C8.drop 2 <$> find (`elem` _mainBranches False) branches
+isMainBranch s = any (`elem` _mainBranches) branches
   where branches = C8.lines s
 
 -- 
@@ -116,29 +89,35 @@ extractMainBranch s = C8.drop 2 <$> find (`elem` _mainBranches False) branches
 --
 
 _extractBranchList :: ReadProcessResult -> Either GitOpError [B.ByteString]
-_extractBranchList (ExitSuccess     , out, _  ) = Right (C8.lines out)
-_extractBranchList (ExitFailure code, _  , err) = Left (GitOpError code err)
+_extractBranchList (ExitSuccess, out, _) =
+  Right . fmap (C8.drop 2) . C8.lines $ out
+_extractBranchList (ExitFailure code, _, err) = Left $ GitOpError code err
 
 _extractCurrentBranch
   :: ReadProcessResult -> Either GitOpError (Maybe B.ByteString)
 _extractCurrentBranch (ExitSuccess, out, _) =
-  Right $ find (C8.isPrefixOf (C8.pack "* ")) (C8.lines out)
-_extractCurrentBranch (ExitFailure code, _, err) = Left (GitOpError code err)
+  Right
+    . fmap (C8.drop 2)
+    . find (C8.isPrefixOf . C8.pack $ "* ")
+    . C8.lines
+    $ out
+_extractCurrentBranch (ExitFailure code, _, err) = Left $ GitOpError code err
 
 _extractMainBranch
   :: ReadProcessResult -> Either GitOpError (Maybe B.ByteString)
 _extractMainBranch (ExitSuccess, out, _) =
-  Right $ find (`elem` _mainBranches True) (C8.lines out)
-_extractMainBranch (ExitFailure code, _, err) = Left (GitOpError code err)
+  Right . find (`elem` _mainBranches) . fmap (C8.drop 2) . C8.lines $ out
+_extractMainBranch (ExitFailure code, _, err) = Left $ GitOpError code err
 
-_mainBranches :: Bool -> [B.ByteString]
-_mainBranches selected = C8.pack <$> map prefix ["main", "master"]
-  where prefix = if selected then ("* " ++) else ("  " ++)
+_extractBranchIsDirty :: ReadProcessResult -> Either GitOpError Bool
+_extractBranchIsDirty (ExitSuccess, out, _) =
+  Right . not $ C8.isSuffixOf (C8.pack "working tree clean") out
+_extractBranchIsDirty (ExitFailure code, _, err) = Left $ GitOpError code err
 
 _extractGitOpErrorOrUnit :: ReadProcessResult -> Either GitOpError ()
-_extractGitOpErrorOrUnit (ExitSuccess     , _, _  ) = Right ()
-_extractGitOpErrorOrUnit (ExitFailure code, _, err) = Left opError
-  where opError = GitOpError code err
+_extractGitOpErrorOrUnit (ExitSuccess, _, _) = Right ()
+_extractGitOpErrorOrUnit (ExitFailure code, _, err) =
+  Left $ GitOpError code err
 
 _extractGitOpErrorOrResult :: ReadProcessResult -> Either GitOpError GitOpResult
 _extractGitOpErrorOrResult (ExitSuccess, out, _) =
@@ -152,7 +131,10 @@ _extractGitOpResult result
   | C8.isPrefixOf (C8.pack "Updating") result = Updated
   | otherwise = GeneralSuccess
 
-_processResult :: ReadProcessResult -> RIO App ()
-_processResult (ExitSuccess     , out, _  ) = logSuc (C8.unpack out)
-_processResult (ExitFailure code, _  , err) = logErr code (C8.unpack err)
+-- 
+-- 
+-- quasi constants
+--
 
+_mainBranches :: [B.ByteString]
+_mainBranches = C8.pack <$> ["master", "main", "develop"]

@@ -2,14 +2,26 @@
 module Logging
   ( logInput
   , logRepo
-  , logSuc
+  , logMsg
+  , logMsgS
+  , logRes
+  , logResS
   , logErr
+  , logErrE
   , logWrn
+  , logWrnS
+  , debugMsg
+  , debugMsgS
+  , errorMsg
+  , errorMsgS
   )
 where
 
+import qualified Data.ByteString.Lazy          as B
+import qualified Data.ByteString.Lazy.Char8    as C8
+
 import           RIO                     hiding ( force )
-import           Types                          ( App )
+import           Types
 
 logInput :: Bool -> Int -> Bool -> Bool -> FilePath -> FilePath -> RIO App ()
 logInput recursive depth main force exclude path =
@@ -32,21 +44,47 @@ logInput recursive depth main force exclude path =
   mkStrExclude x = if null x then " " else "excluding " <> exclude
 
 logRepo :: FilePath -> RIO App ()
-logRepo repo = logInfo . fromString $ "updating repo: " <> repo
+logRepo repo = logInfo . fromString $ "\nupdating repo: " <> repo
 
-logSuc :: String -> RIO App ()
-logSuc msg = logInfo . fromString $ "Success: " ++ msg
+logMsg :: B.ByteString -> RIO App ()
+logMsg = logMsgS . C8.unpack
 
-logErr :: Int -> String -> RIO App ()
+logMsgS :: String -> RIO App ()
+logMsgS = logInfo . fromString
+
+logRes :: B.ByteString -> GitOpResult -> RIO App ()
+logRes msg = logResS (C8.unpack msg)
+
+logResS :: String -> GitOpResult -> RIO App ()
+logResS msg res = logInfo . fromString . concat $ ["Success: ", msg, show res]
+
+logErrE :: GitOpError -> RIO App ()
+logErrE e = logErr (errorCode e) (errorMessage e)
+
+logErr :: Int -> B.ByteString -> RIO App ()
 logErr code msg =
-  logError . fromString . concat $ ["Failed: ", show code, " - ", msg]
+  logError . fromString . concat $ ["Failed: ", show code, " - ", C8.unpack msg]
 
-logWrn :: String -> RIO App ()
-logWrn msg = logInfo . fromString $ "Warning: " ++ msg
+logWrn :: B.ByteString -> RIO App ()
+logWrn = logWrnS . C8.unpack
+
+logWrnS :: String -> RIO App ()
+logWrnS msg = logWarn . fromString $ "Warning: " ++ msg
+
+debugMsg :: B.ByteString -> RIO App ()
+debugMsg = logMsgS . C8.unpack
+
+debugMsgS :: String -> RIO App ()
+debugMsgS = logDebug . fromString
+
+errorMsg :: B.ByteString -> RIO App ()
+errorMsg = logMsgS . C8.unpack
+
+errorMsgS :: String -> RIO App ()
+errorMsgS = logError . fromString
 
 _resolvePath :: FilePath -> FilePath
 _resolvePath path | path == "."  = "current directory "
                   | path == ".." = "parent directory "
                   | path == "~"  = "home directory "
                   | otherwise    = path <> " "
-
