@@ -94,7 +94,7 @@ _isDirty repo = Log.debugMsgS "Checking branch status..." >> do
   -- TODO write result to app
   either (return False <$ Log.logErrE) return dirty
 
-_hardReset :: FilePath -> C8.ByteString -> RIO App ()
+_hardReset :: FilePath -> B.ByteString -> RIO App ()
 _hardReset repo branch =
   Log.debugMsgS "Trying to hard reset the current branch..." >> do
     res <- Git.resetHard repo branch

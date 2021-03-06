@@ -82,28 +82,24 @@ isMainBranch branch = branch `elem` _mainBranches
 
 _extractBranchList :: ReadProcessResult -> Either GitOpError [B.ByteString]
 _extractBranchList (ExitSuccess, out, _) =
-  Right . fmap (C8.drop 2) . C8.lines $ out
+  Right . fmap (B.drop 2) . C8.lines $ out
 _extractBranchList (ExitFailure code, _, err) = Left $ GitOpError code err
 
 _extractCurrentBranch
   :: ReadProcessResult -> Either GitOpError (Maybe B.ByteString)
 _extractCurrentBranch (ExitSuccess, out, _) =
-  Right
-    . fmap (C8.drop 2)
-    . find (C8.isPrefixOf . C8.pack $ "* ")
-    . C8.lines
-    $ out
+  Right . fmap (B.drop 2) . find (B.isPrefixOf "* ") . C8.lines $ out
 _extractCurrentBranch (ExitFailure code, _, err) = Left $ GitOpError code err
 
 _extractMainBranch
   :: ReadProcessResult -> Either GitOpError (Maybe B.ByteString)
 _extractMainBranch (ExitSuccess, out, _) =
-  Right . find (`elem` _mainBranches) . fmap (C8.drop 2) . C8.lines $ out
+  Right . find (`elem` _mainBranches) . fmap (B.drop 2) . C8.lines $ out
 _extractMainBranch (ExitFailure code, _, err) = Left $ GitOpError code err
 
 _extractBranchIsDirty :: ReadProcessResult -> Either GitOpError Bool
 _extractBranchIsDirty (ExitSuccess, out, _) =
-  Right . not $ C8.isSuffixOf (C8.pack "working tree clean") out
+  Right . not $ B.isSuffixOf "working tree clean" out
 _extractBranchIsDirty (ExitFailure code, _, err) = Left $ GitOpError code err
 
 _extractGitOpErrorOrUnit :: ReadProcessResult -> Either GitOpError ()
@@ -118,10 +114,9 @@ _extractGitOpErrorOrResult (ExitFailure code, _, err) =
   Left $ GitOpError code err
 
 _extractGitOpResult :: B.ByteString -> GitOpResult
-_extractGitOpResult result
-  | C8.isPrefixOf (C8.pack "Already up to date") result = UpToDate
-  | C8.isPrefixOf (C8.pack "Updating") result = Updated
-  | otherwise = GeneralSuccess
+_extractGitOpResult result | B.isPrefixOf "Already up to date" result = UpToDate
+                           | B.isPrefixOf "Updating" result = Updated
+                           | otherwise                      = GeneralSuccess
 
 -- 
 -- 
@@ -129,5 +124,4 @@ _extractGitOpResult result
 --
 
 _mainBranches :: [B.ByteString]
-_mainBranches = C8.pack <$> ["master", "main", "develop"]
-
+_mainBranches = ["master", "main", "develop"]

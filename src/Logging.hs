@@ -18,7 +18,6 @@ module Logging
 where
 
 import qualified RIO.ByteString.Lazy           as B
-import qualified Data.ByteString.Lazy.Char8    as C8
 
 import           RIO                     hiding ( force )
 import           Types
@@ -47,13 +46,13 @@ logRepo :: FilePath -> RIO App ()
 logRepo repo = logInfo . fromString $ "\nupdating repo: " <> repo
 
 logMsg :: B.ByteString -> RIO App ()
-logMsg = logMsgS . C8.unpack
+logMsg = logMsgS . show
 
 logMsgS :: String -> RIO App ()
 logMsgS = logInfo . fromString
 
 logRes :: B.ByteString -> GitOpResult -> RIO App ()
-logRes msg = logResS (C8.unpack msg)
+logRes msg = logResS (show msg)
 
 logResS :: String -> GitOpResult -> RIO App ()
 logResS msg res =
@@ -64,25 +63,22 @@ logErrE e = logErr (errorCode e) (errorMessage e)
 
 logErr :: Int -> B.ByteString -> RIO App ()
 logErr code msg =
-  logError
-    . fromString
-    . concat
-    $ ["Failed => ", show code, " - ", C8.unpack msg]
+  logError . fromString . concat $ ["Failed => ", show code, " - ", show msg]
 
 logWrn :: B.ByteString -> RIO App ()
-logWrn = logWrnS . C8.unpack
+logWrn = logWrnS . show
 
 logWrnS :: String -> RIO App ()
 logWrnS msg = logWarn . fromString $ "Warning => " <> msg
 
 debugMsg :: B.ByteString -> RIO App ()
-debugMsg = logMsgS . C8.unpack
+debugMsg = logMsgS . show
 
 debugMsgS :: String -> RIO App ()
 debugMsgS = logDebug . fromString
 
 errorMsg :: B.ByteString -> RIO App ()
-errorMsg = logMsgS . C8.unpack
+errorMsg = logMsgS . show
 
 errorMsgS :: String -> RIO App ()
 errorMsgS = logError . fromString
