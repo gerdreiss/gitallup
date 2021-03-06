@@ -2,7 +2,7 @@
 
 module Types where
 
-import qualified Data.ByteString.Lazy          as B
+import qualified RIO.ByteString.Lazy           as B
 import           RIO
 import           RIO.Process
 

@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Git
   ( listBranches
   , currentBranch
@@ -11,7 +13,7 @@ module Git
   )
 where
 
-import qualified Data.ByteString.Lazy          as B
+import qualified RIO.ByteString.Lazy           as B
 import qualified Data.ByteString.Lazy.Char8    as C8
 
 import           Data.List                      ( find )
@@ -55,7 +57,7 @@ resetHard :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpResult)
 resetHard repo branch =
   _extractGitOpErrorOrResult
     <$> proc "git"
-             ["-C", repo, "reset", "--hard", "origin/" ++ C8.unpack branch]
+             ["-C", repo, "reset", "--hard", "origin/" <> C8.unpack branch]
              readProcess
 
 isDirty :: FilePath -> RIO App (Either GitOpError Bool)
@@ -128,3 +130,4 @@ _extractGitOpResult result
 
 _mainBranches :: [B.ByteString]
 _mainBranches = C8.pack <$> ["master", "main", "develop"]
+

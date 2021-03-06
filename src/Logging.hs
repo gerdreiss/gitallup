@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 module Logging
   ( logInput
   , logRepo
@@ -17,7 +17,7 @@ module Logging
   )
 where
 
-import qualified Data.ByteString.Lazy          as B
+import qualified RIO.ByteString.Lazy           as B
 import qualified Data.ByteString.Lazy.Char8    as C8
 
 import           RIO                     hiding ( force )
@@ -57,20 +57,23 @@ logRes msg = logResS (C8.unpack msg)
 
 logResS :: String -> GitOpResult -> RIO App ()
 logResS msg res =
-  logInfo . fromString . concat $ ["Success: ", msg, " ", show res]
+  logInfo . fromString . concat $ ["Success => ", msg, " ", show res]
 
 logErrE :: GitOpError -> RIO App ()
 logErrE e = logErr (errorCode e) (errorMessage e)
 
 logErr :: Int -> B.ByteString -> RIO App ()
 logErr code msg =
-  logError . fromString . concat $ ["Failed: ", show code, " - ", C8.unpack msg]
+  logError
+    . fromString
+    . concat
+    $ ["Failed => ", show code, " - ", C8.unpack msg]
 
 logWrn :: B.ByteString -> RIO App ()
 logWrn = logWrnS . C8.unpack
 
 logWrnS :: String -> RIO App ()
-logWrnS msg = logWarn . fromString $ "Warning: " ++ msg
+logWrnS msg = logWarn . fromString $ "Warning => " <> msg
 
 debugMsg :: B.ByteString -> RIO App ()
 debugMsg = logMsgS . C8.unpack

@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
@@ -38,7 +39,7 @@ options =
     <*> exclude
     <*> verbose
 
-directory :: Parser String
+directory :: Parser FilePath 
 directory =
   strOption
     ( long "path"
@@ -85,7 +86,7 @@ force =
         <> help "Force update overriding any local changes?"
     )
 
-exclude :: Parser String
+exclude :: Parser FilePath
 exclude =
   strOption
     ( long "exclude"
