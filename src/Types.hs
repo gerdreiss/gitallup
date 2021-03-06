@@ -9,11 +9,18 @@ import           RIO.Process
 type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
 
 -- TODO will eventually be extended?..
-data GitOpResult = Updated | UpToDate | GeneralSuccess
+data GitOpSuccess = Updated | UpToDate | GeneralSuccess
 data GitOpError =
   GitOpError
     { errorCode    :: !Int
     , errorMessage :: !B.ByteString
+    }
+
+data RepoUpdateResult =
+  RepoUpdateResult
+    { updateResultRepo     :: !FilePath
+    , updateResultBranch   :: !(Maybe B.ByteString)
+    , updateErrorOrSuccess :: !(Either GitOpError GitOpSuccess)
     }
 
 data Options =
@@ -32,6 +39,7 @@ data App =
     { appLogFunc        :: !LogFunc
     , appProcessContext :: !ProcessContext
     , appOptions        :: !Options
+    , appResults        :: [RepoUpdateResult]
     }
 
 class HasDirectory env where
@@ -51,6 +59,9 @@ class HasForce env where
 
 class HasExclude env where
   excludeL :: Lens' env FilePath
+
+class HasResults env where
+  resultsL :: Lens' env [RepoUpdateResult]
 
 instance HasDirectory App where
   directoryL = appOptionsL . optionsDirectoryL
@@ -98,7 +109,26 @@ instance HasProcessContext App where
   processContextL =
     lens appProcessContext (\x y -> x { appProcessContext = y })
 
-instance Show GitOpResult where
+instance HasResults App where
+  resultsL = lens appResults (\x y -> x { appResults = y })
+
+instance Show GitOpSuccess where
   show Updated        = "updated successfully."
   show UpToDate       = "already up to date."
   show GeneralSuccess = "successful."
+
+instance Show GitOpError where
+  show err = concat
+    [ "Update failed with code "
+    , show . errorCode $ err
+    , ", error message '"
+    , show . errorMessage $ err
+    , "'"
+    ]
+
+instance Show RepoUpdateResult where
+  show res = concat
+    [ "Results for " <> updateResultRepo res
+    , maybe "" ((", branch " ++) . show) (updateResultBranch res)
+    , either show (("Repo " ++) . show) (updateErrorOrSuccess res)
+    ]

@@ -22,6 +22,9 @@ import           System.Directory               ( doesDirectoryExist
                                                 )
 import           System.FilePath                ( (</>) )
 import           Types
+import           Data.List                      ( partition
+                                                , intercalate
+                                                )
 
 run :: RIO App ()
 run = do
@@ -34,6 +37,7 @@ run = do
   Log.logInput recursive depth main force exclude root
   listRepos recursive depth (splitOn "," exclude) root
     >>= updateRepos main force
+    >>  printSummary
 
 listRepos :: Bool -> Int -> [FilePath] -> FilePath -> RIO App [FilePath]
 listRepos recursive depth excluded root = do
@@ -67,80 +71,110 @@ updateRepos main force = mapM_ (updateRepo main force)
 updateRepo :: Bool -> Bool -> FilePath -> RIO App ()
 updateRepo main force repo = Log.logRepo repo >> do
   -- force updating the current branch discarding any changes
-  when force (_currentBranchHardReset repo)
+  when force (hardResetCurrentBranch repo)
   -- update the current branch         
   res <- Git.updateBranch repo
   -- TODO write result to app
   either Log.logErrE (Log.logResS "Update result:") res
   -- switch to main branch and update it  
-  when main (_checkCurrentSwitchUpdate repo)
+  when main (checkCurrentBranchSwitchUpdate repo)
 
-_currentBranchHardReset :: FilePath -> RIO App ()
-_currentBranchHardReset repo =
-  whenM (_isDirty repo)
-    $  Log.debugMsgS "Trying to extract the current branch..."
-    >> do
-         res <- Git.currentBranch repo
-         either Log.logErrE processCurrentBranch res
+hardResetCurrentBranch :: FilePath -> RIO App ()
+hardResetCurrentBranch repo =
+  whenM (isCurrentBranchDirty repo)
+    $   Log.debugMsgS "Trying to extract the current branch..."
+    >>  Git.currentBranch repo
+    >>= either Log.logErrE processCurrentBranch
  where
   processCurrentBranch maybeBranch = maybe
+    -- TODO instead of logging, add error to app
     (Log.errorMsgS $ concat ["Repo", repo, "has no current branch (WTF?)"])
-    (_hardReset repo)
+    (hardResultBranch repo)
     maybeBranch
 
-_isDirty :: FilePath -> RIO App Bool
-_isDirty repo = Log.debugMsgS "Checking branch status..." >> do
-  dirty <- Git.isDirty repo
-  -- TODO write result to app
-  either (return False <$ Log.logErrE) return dirty
-
-_hardReset :: FilePath -> B.ByteString -> RIO App ()
-_hardReset repo branch =
-  Log.debugMsgS "Trying to hard reset the current branch..." >> do
-    res <- Git.resetHard repo branch
+isCurrentBranchDirty :: FilePath -> RIO App Bool
+isCurrentBranchDirty repo =
+  Log.debugMsgS "Checking branch status..."
+    >>  Git.isDirty repo
     -- TODO write result to app
-    either Log.logErrE (Log.logResS "Hard reset") res
+    >>= either (return False <$ Log.logErrE) return
 
-_checkCurrentSwitchUpdate :: FilePath -> RIO App ()
-_checkCurrentSwitchUpdate repo =
-  Log.debugMsgS "Trying to extract the current branch..." >> do
-    res <- Git.currentBranch repo
+
+hardResultBranch :: FilePath -> B.ByteString -> RIO App ()
+hardResultBranch repo branch =
+  Log.debugMsgS "Trying to hard reset the current branch..."
+    >>  Git.resetHard repo branch
     -- TODO write result to app
-    either Log.logErrE processCurrentBranch res
+    >>= either Log.logErrE (Log.logResS "Hard reset")
+
+checkCurrentBranchSwitchUpdate :: FilePath -> RIO App ()
+checkCurrentBranchSwitchUpdate repo =
+  Log.debugMsgS "Trying to extract the current branch..."
+    >>  Git.currentBranch repo
+    >>= either Log.logErrE processCurrentBranch
  where
-  processCurrentBranch branch = maybe
+  processCurrentBranch = maybe
     (Log.errorMsgS $ concat ["Repo", repo, "has no current branch (WTF?)"])
-    (_checkIsMainSwitchUpdate repo)
-    branch
+    (checkBranchIsMainSwitchUpdate repo)
 
-_checkIsMainSwitchUpdate :: FilePath -> B.ByteString -> RIO App ()
-_checkIsMainSwitchUpdate repo branch =
-  unless (Git.isMainBranch branch) $ _checkMainSwitchUpdate repo
+checkBranchIsMainSwitchUpdate :: FilePath -> B.ByteString -> RIO App ()
+checkBranchIsMainSwitchUpdate repo branch =
+  unless (Git.isMainBranch branch) (getMainBranchSwitchUpdate repo)
 
-_checkMainSwitchUpdate :: FilePath -> RIO App ()
-_checkMainSwitchUpdate repo =
-  Log.logMsgS "Trying to switch to main branch..." >> do
-    res <- Git.mainBranch repo
-    either Log.logErrE processMainBranch res
+getMainBranchSwitchUpdate :: FilePath -> RIO App ()
+getMainBranchSwitchUpdate repo =
+  Log.logMsgS "Trying to switch to main branch..."
+    >>  Git.mainBranch repo
+    >>= either Log.logErrE processMainBranch
  where
   processMainBranch branch = maybe
-    (Log.errorMsgS $ concat ["Repo", repo, "has no main branch (WTF?)"])
-    (_switchUpdateMain repo)
+    (Log.errorMsgS $ concat ["Repo ", repo, " has no main branch (WTF?)"])
+    (switchBranchUpdate repo)
     branch
 
-_switchUpdateMain :: FilePath -> B.ByteString -> RIO App ()
-_switchUpdateMain repo branch = do
-  res <- Git.switchBranch repo branch
-  -- TODO write result to app
-  either Log.logErrE logSwitchUpdateBranch res
+switchBranchUpdate :: FilePath -> B.ByteString -> RIO App ()
+switchBranchUpdate repo branch =
+  Git.switchBranch repo branch >>= either Log.logErrE logSwitchUpdateBranch
  where
   logSwitchUpdateBranch _ =
-    Log.logResS message GeneralSuccess >> _updateBranch repo
+    Log.logResS message GeneralSuccess >> updateCurrentBranch repo
   message = "Switch to branch " <> C8.unpack branch
 
-_updateBranch :: FilePath -> RIO App ()
-_updateBranch repo = Log.debugMsgS "Trying to update branch..." >> do
-  res <- Git.updateBranch repo
-  -- TODO write result to app
-  either Log.logErrE logResult res
-  where logResult _ = Log.logResS "Update result" GeneralSuccess
+updateCurrentBranch :: FilePath -> RIO App ()
+updateCurrentBranch repo =
+  Log.debugMsgS "Trying to update branch..."
+    >>  Git.updateBranch repo
+    >>= updateAppResults repo Nothing
+
+--
+-- TODO fix this
+-- write result to app result list
+--
+updateAppResults
+  :: FilePath                       -- the repository
+  -> Maybe B.ByteString             -- the branch, optional
+  -> Either GitOpError GitOpSuccess -- the new result to add to app results
+  -> RIO App ()
+updateAppResults repo branch opResult = do
+  app        <- ask
+  oldResults <- view resultsL
+  -- TODO remove this debug log
+  Log.logMsgS
+    ("DEBUGGING OLD RESULTS: " <> (intercalate "\n" . fmap show $ oldResults))
+  runRIO app $ do
+    local (set resultsL (newResult : oldResults)) (return ())
+  where newResult = RepoUpdateResult repo branch opResult
+
+--
+--
+-- prints the update summary
+--
+printSummary :: RIO App ()
+printSummary = do
+  results <- view resultsL
+  let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
+  mapM_ printResult errors
+  mapM_ printResult successes
+
+printResult :: RepoUpdateResult -> RIO App ()
+printResult res = Log.logMsgS (updateResultRepo res)

@@ -47,13 +47,14 @@ switchBranch repo branch =
   _extractGitOpErrorOrUnit
     <$> proc "git" ["-C", repo, "checkout", C8.unpack branch] readProcess
 
-updateBranch :: FilePath -> RIO App (Either GitOpError GitOpResult)
+updateBranch :: FilePath -> RIO App (Either GitOpError GitOpSuccess)
 updateBranch repo =
   proc "git" ["-C", repo, "fetch", "--all"] readProcess
     >>  _extractGitOpErrorOrResult
     <$> proc "git" ["-C", repo, "pull"] readProcess
 
-resetHard :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpResult)
+resetHard
+  :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpSuccess)
 resetHard repo branch =
   _extractGitOpErrorOrResult
     <$> proc "git"
@@ -107,13 +108,14 @@ _extractGitOpErrorOrUnit (ExitSuccess, _, _) = Right ()
 _extractGitOpErrorOrUnit (ExitFailure code, _, err) =
   Left $ GitOpError code err
 
-_extractGitOpErrorOrResult :: ReadProcessResult -> Either GitOpError GitOpResult
+_extractGitOpErrorOrResult
+  :: ReadProcessResult -> Either GitOpError GitOpSuccess
 _extractGitOpErrorOrResult (ExitSuccess, out, _) =
   Right $ _extractGitOpResult out
 _extractGitOpErrorOrResult (ExitFailure code, _, err) =
   Left $ GitOpError code err
 
-_extractGitOpResult :: B.ByteString -> GitOpResult
+_extractGitOpResult :: B.ByteString -> GitOpSuccess
 _extractGitOpResult result | B.isPrefixOf "Already up to date" result = UpToDate
                            | B.isPrefixOf "Updating" result = Updated
                            | otherwise                      = GeneralSuccess

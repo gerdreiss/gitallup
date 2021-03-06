@@ -51,10 +51,10 @@ logMsg = logMsgS . show
 logMsgS :: String -> RIO App ()
 logMsgS = logInfo . fromString
 
-logRes :: B.ByteString -> GitOpResult -> RIO App ()
+logRes :: B.ByteString -> GitOpSuccess -> RIO App ()
 logRes msg = logResS (show msg)
 
-logResS :: String -> GitOpResult -> RIO App ()
+logResS :: String -> GitOpSuccess -> RIO App ()
 logResS msg res =
   logInfo . fromString . concat $ ["Success => ", msg, " ", show res]
 
