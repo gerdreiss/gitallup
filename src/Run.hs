@@ -99,7 +99,6 @@ isCurrentBranchDirty repo =
     -- TODO write result to app
     >>= either (return False <$ Log.logErrE) return
 
-
 hardResultBranch :: FilePath -> B.ByteString -> RIO App ()
 hardResultBranch repo branch =
   Log.debugMsgS "Trying to hard reset the current branch..."
@@ -142,28 +141,23 @@ switchBranchUpdate repo branch =
 
 updateCurrentBranch :: FilePath -> RIO App ()
 updateCurrentBranch repo =
-  Log.debugMsgS "Trying to update branch..."
+  Log.debugMsgS ("Trying to update repo" <> repo <> "...")
     >>  Git.updateBranch repo
-    >>= updateAppResults repo Nothing
+    >>= either Log.logErrE (Log.logMsgS . show)
 
 --
 -- TODO fix this
 -- write result to app result list
 --
-updateAppResults
-  :: FilePath                       -- the repository
-  -> Maybe B.ByteString             -- the branch, optional
-  -> Either GitOpError GitOpSuccess -- the new result to add to app results
-  -> RIO App ()
-updateAppResults repo branch opResult = do
+
+addNewResult :: RepoUpdateResult -> RIO App () -> RIO App ()
+addNewResult newResult inner = do
   app        <- ask
   oldResults <- view resultsL
-  -- TODO remove this debug log
   Log.logMsgS
     ("DEBUGGING OLD RESULTS: " <> (intercalate "\n" . fmap show $ oldResults))
   runRIO app $ do
-    local (set resultsL (newResult : oldResults)) (return ())
-  where newResult = RepoUpdateResult repo branch opResult
+    local (set resultsL (newResult : oldResults)) inner
 
 --
 --
