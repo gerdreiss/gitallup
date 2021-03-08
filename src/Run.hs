@@ -105,9 +105,9 @@ hardResetBranch repo branch =
 
 checkCurrentBranchSwitchUpdate :: FilePath -> RIO App RepoUpdateResult
 checkCurrentBranchSwitchUpdate repo =
-  Git.currentBranch repo >>= processBranchResult
+  Git.currentBranch repo >>= processCurrentBranch
  where
-  processBranchResult = either
+  processCurrentBranch = either
     (errorResult repo)
     (maybe (noCurrentBranchErrorResult repo)
            (checkBranchNotMainSwitchUpdate repo)
@@ -117,7 +117,7 @@ checkBranchNotMainSwitchUpdate
   :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
 checkBranchNotMainSwitchUpdate repo branch =
   Log.logMsg "Checking whether current branch is not the main branch..."
-    >> if not $ Git.isMainBranch branch
+    >> if not (Git.isMainBranch branch)
          then retrieveMainBranchSwitchUpdate repo
          else generalSuccessResult repo (Just branch)
 

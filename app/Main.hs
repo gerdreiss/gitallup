@@ -25,7 +25,7 @@ main = do
   lo <- setLogUseColor True <$> logOptionsHandle stderr (optionsVerbose opts)
   pc <- mkDefaultProcessContext
   withLogFunc lo $ \lf ->
-    let app = App { appLogFunc = lf, appProcessContext = pc, appOptions = opts, appResults = [] }
+    let app = App { appLogFunc = lf, appProcessContext = pc, appOptions = opts }
      in runRIO app run
 
 options :: Parser Options
