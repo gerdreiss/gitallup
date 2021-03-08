@@ -75,7 +75,7 @@ updateRepo main force repo =
        )
     >> (if main
          then checkCurrentBranchSwitchUpdate repo
-         else generalSuccess repo Nothing
+         else generalSuccessResult repo Nothing
        )
 
 hardResetCurrentBranch :: FilePath -> RIO App RepoUpdateResult
@@ -84,8 +84,9 @@ hardResetCurrentBranch repo = ifM
   (   Log.debug "Retrieving current branch..."
   -- inserting this comment just to force line break
   >>  Git.currentBranch repo
-  >>= either (return . RepoUpdateResult repo Nothing . Left)
-             (maybe (noCurrentBranchError repo) (hardResetBranch repo))
+  >>= either
+        (errorResult repo)
+        (maybe (noCurrentBranchErrorResult repo) (hardResetBranch repo))
   )
   (RepoUpdateResult repo Nothing <$> Git.updateBranch repo)
 
@@ -103,9 +104,14 @@ hardResetBranch repo branch =
         )
 
 checkCurrentBranchSwitchUpdate :: FilePath -> RIO App RepoUpdateResult
-checkCurrentBranchSwitchUpdate repo = Git.currentBranch repo >>= either
-  (return . RepoUpdateResult repo Nothing . Left)
-  (maybe (noCurrentBranchError repo) (checkBranchNotMainSwitchUpdate repo))
+checkCurrentBranchSwitchUpdate repo =
+  Git.currentBranch repo >>= processBranchResult
+ where
+  processBranchResult = either
+    (errorResult repo)
+    (maybe (noCurrentBranchErrorResult repo)
+           (checkBranchNotMainSwitchUpdate repo)
+    )
 
 checkBranchNotMainSwitchUpdate
   :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
@@ -113,15 +119,16 @@ checkBranchNotMainSwitchUpdate repo branch =
   Log.logMsg "Checking whether current branch is not the main branch..."
     >> if not $ Git.isMainBranch branch
          then retrieveMainBranchSwitchUpdate repo
-         else generalSuccess repo (Just branch)
+         else generalSuccessResult repo (Just branch)
 
 retrieveMainBranchSwitchUpdate :: FilePath -> RIO App RepoUpdateResult
 retrieveMainBranchSwitchUpdate repo =
   Log.logMsg "Retrieving main branch..."
   -- inserting this comment just to force line break
     >>  Git.mainBranch repo
-    >>= either (return . RepoUpdateResult repo Nothing . Left)
-               (maybe (noMainBranchError repo) (switchBranchUpdate repo))
+    >>= either
+          (errorResult repo)
+          (maybe (noMainBranchErrorResult repo) (switchBranchUpdate repo))
 
 switchBranchUpdate :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
 switchBranchUpdate repo branch =
@@ -132,26 +139,29 @@ switchBranchUpdate repo branch =
         >> Git.updateBranch repo
         )
 
-generalSuccess :: FilePath -> Maybe B.ByteString -> RIO App RepoUpdateResult
-generalSuccess repo maybeBranch =
+errorResult :: FilePath -> GitOpError -> RIO App RepoUpdateResult
+errorResult repo = return . RepoUpdateResult repo Nothing . Left
+
+generalSuccessResult
+  :: FilePath -> Maybe B.ByteString -> RIO App RepoUpdateResult
+generalSuccessResult repo maybeBranch =
   return $ RepoUpdateResult repo maybeBranch (Right GeneralSuccess)
 
-noCurrentBranchError :: FilePath -> RIO App RepoUpdateResult
-noCurrentBranchError repo = return $ RepoUpdateResult
-  repo
-  Nothing
-  (Left $ GitOpError
-    0
-    (C8.pack $ "Repo" <> repo <> "has no current branch (WTF?)")
-  )
+noCurrentBranchErrorResult :: FilePath -> RIO App RepoUpdateResult
+noCurrentBranchErrorResult repo =
+  return $ RepoUpdateResult repo Nothing (noCurrentBranchError repo)
 
-noMainBranchError :: FilePath -> RIO App RepoUpdateResult
-noMainBranchError repo = return $ RepoUpdateResult
-  repo
-  Nothing
-  (Left $ GitOpError 0 (C8.pack $ "Repo" <> repo <> "has no main branch (WTF?)")
-  )
+noCurrentBranchError :: FilePath -> Either GitOpError GitOpSuccess
+noCurrentBranchError repo = Left
+  $ GitOpError 0 (C8.pack $ "Repo" <> repo <> "has no current branch (WTF?)")
 
+noMainBranchErrorResult :: FilePath -> RIO App RepoUpdateResult
+noMainBranchErrorResult repo =
+  return $ RepoUpdateResult repo Nothing (noMainBranchError repo)
+
+noMainBranchError :: FilePath -> Either GitOpError GitOpSuccess
+noMainBranchError repo =
+  Left $ GitOpError 0 (C8.pack $ "Repo" <> repo <> "has no main branch (WTF?)")
 
 --
 --
