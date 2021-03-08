@@ -3,23 +3,17 @@ module Logging
   ( logInput
   , logRepo
   , logMsg
-  , logMsgS
   , logRes
-  , logResS
   , logErr
-  , logErrE
-  , logWrn
-  , logWrnS
-  , debugMsg
-  , debugMsgS
-  , errorMsg
-  , errorMsgS
+  , teeLogErr
+  , debug
+  , error
   )
 where
 
-import qualified RIO.ByteString.Lazy           as B
-
-import           RIO                     hiding ( force )
+import           RIO                     hiding ( force
+                                                , error
+                                                )
 import           Types
 
 logInput :: Bool -> Int -> Bool -> Bool -> FilePath -> FilePath -> RIO App ()
@@ -45,43 +39,28 @@ logInput recursive depth main force exclude path =
 logRepo :: FilePath -> RIO App ()
 logRepo repo = logInfo . fromString $ "\nupdating repo: " <> repo
 
-logMsg :: B.ByteString -> RIO App ()
-logMsg = logMsgS . show
+logMsg :: String -> RIO App ()
+logMsg = logInfo . fromString
 
-logMsgS :: String -> RIO App ()
-logMsgS = logInfo . fromString
-
-logRes :: B.ByteString -> GitOpSuccess -> RIO App ()
-logRes msg = logResS (show msg)
-
-logResS :: String -> GitOpSuccess -> RIO App ()
-logResS msg res =
+logRes :: String -> GitOpSuccess -> RIO App ()
+logRes msg res =
   logInfo . fromString . concat $ ["Success => ", msg, " ", show res]
 
-logErrE :: GitOpError -> RIO App ()
-logErrE e = logErr (errorCode e) (errorMessage e)
+teeLogErr :: GitOpError -> RIO App GitOpError
+teeLogErr err = logErr err >> return err
 
-logErr :: Int -> B.ByteString -> RIO App ()
-logErr code msg =
-  logError . fromString . concat $ ["Failed => ", show code, " - ", show msg]
+logErr :: GitOpError -> RIO App ()
+logErr err =
+  logError
+    . fromString
+    . concat
+    $ ["Failed => ", show . errorCode $ err, " - ", show . errorMessage $ err]
 
-logWrn :: B.ByteString -> RIO App ()
-logWrn = logWrnS . show
+debug :: String -> RIO App ()
+debug = logDebug . fromString
 
-logWrnS :: String -> RIO App ()
-logWrnS msg = logWarn . fromString $ "Warning => " <> msg
-
-debugMsg :: B.ByteString -> RIO App ()
-debugMsg = logMsgS . show
-
-debugMsgS :: String -> RIO App ()
-debugMsgS = logDebug . fromString
-
-errorMsg :: B.ByteString -> RIO App ()
-errorMsg = logMsgS . show
-
-errorMsgS :: String -> RIO App ()
-errorMsgS = logError . fromString
+error :: String -> RIO App ()
+error = logError . fromString
 
 _resolvePath :: FilePath -> FilePath
 _resolvePath path | path == "."  = "current directory "
