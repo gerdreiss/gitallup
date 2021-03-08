@@ -22,9 +22,7 @@ import           System.Directory               ( doesDirectoryExist
                                                 )
 import           System.FilePath                ( (</>) )
 import           Types
-import           Data.List                      ( partition
-                                                , intercalate
-                                                )
+import           Data.List                      ( partition )
 
 run :: RIO App ()
 run = do
@@ -69,15 +67,15 @@ updateRepos :: Bool -> Bool -> [FilePath] -> RIO App ()
 updateRepos main force = mapM_ (updateRepo main force)
 
 updateRepo :: Bool -> Bool -> FilePath -> RIO App ()
-updateRepo main force repo = Log.logRepo repo >> do
-  -- force updating the current branch discarding any changes
-  when force (hardResetCurrentBranch repo)
-  -- update the current branch         
-  res <- Git.updateBranch repo
-  -- TODO write result to app
-  either Log.logErrE (Log.logResS "Update result:") res
-  -- switch to main branch and update it  
-  when main (checkCurrentBranchSwitchUpdate repo)
+updateRepo main force repo =
+  Log.logRepo repo
+    >>  when force (hardResetCurrentBranch repo)
+    >>  Git.updateBranch repo
+    >>= (\res -> addResult res (logResult res))
+    >>  when main (checkCurrentBranchSwitchUpdate repo)
+ where
+  addResult res = addNewResult (RepoUpdateResult repo Nothing res)
+  logResult = either Log.logErrE (Log.logResS "Update result:")
 
 hardResetCurrentBranch :: FilePath -> RIO App ()
 hardResetCurrentBranch repo =
@@ -143,21 +141,18 @@ updateCurrentBranch :: FilePath -> RIO App ()
 updateCurrentBranch repo =
   Log.debugMsgS ("Trying to update repo" <> repo <> "...")
     >>  Git.updateBranch repo
-    >>= either Log.logErrE (Log.logMsgS . show)
+    >>= (\res -> addResult res (logResult res))
+ where
+  addResult res = addNewResult (RepoUpdateResult repo Nothing res)
+  logResult = either Log.logErrE (Log.logMsgS . show)
+
 
 --
--- TODO fix this
+--
 -- write result to app result list
 --
-
 addNewResult :: RepoUpdateResult -> RIO App () -> RIO App ()
-addNewResult newResult inner = do
-  app        <- ask
-  oldResults <- view resultsL
-  Log.logMsgS
-    ("DEBUGGING OLD RESULTS: " <> (intercalate "\n" . fmap show $ oldResults))
-  runRIO app $ do
-    local (set resultsL (newResult : oldResults)) inner
+addNewResult newResult = local (over resultsL (newResult :))
 
 --
 --
