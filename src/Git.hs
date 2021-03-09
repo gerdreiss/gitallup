@@ -48,9 +48,10 @@ mainBranch repo =
 
 --
 --
-switchBranch :: FilePath -> B.ByteString -> RIO App (Either GitOpError ())
+switchBranch
+  :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpSuccess)
 switchBranch repo branch =
-  _extractGitOpErrorOrUnit
+  _extractGitOpErrorOrResult
     <$> proc "git" ["-C", repo, "checkout", C8.unpack branch] readProcess
 
 --
@@ -140,9 +141,13 @@ _extractGitOpErrorOrResult (ExitFailure code, _, err) =
 --
 --
 _extractGitOpResult :: B.ByteString -> GitOpSuccess
-_extractGitOpResult result | B.isPrefixOf "Already up to date" result = UpToDate
-                           | B.isPrefixOf "Updating" result = Updated
-                           | otherwise                      = GeneralSuccess
+_extractGitOpResult result
+  | B.isPrefixOf "Already up to date" result
+  = UpToDate
+  | B.isPrefixOf "Updating" result || B.isPrefixOf "HEAD is now at" result
+  = Updated
+  | otherwise
+  = GeneralSuccess
 
 -- 
 -- 

@@ -28,6 +28,7 @@ dependencies:
   - bytestring
   - extra
   - split
+  - pretty-simple
 
 ghc-options:
   - -Wall

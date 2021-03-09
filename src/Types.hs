@@ -8,12 +8,12 @@ import           RIO.Process
 
 type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
 
-data GitOpSuccess = Updated | UpToDate | GeneralSuccess
+data GitOpSuccess = Updated | UpToDate | GeneralSuccess deriving (Eq)
 data GitOpError =
   GitOpError
     { errorCode    :: !Int
     , errorMessage :: !B.ByteString
-    }
+    } deriving (Eq)
 
 data RepoUpdateResult =
   RepoUpdateResult
@@ -120,7 +120,7 @@ instance Show GitOpError where
 
 instance Show RepoUpdateResult where
   show res = concat
-    [ "Results for " <> updateResultRepo res
+    [ "\nResults for " <> updateResultRepo res
     , maybe "" ((", branch " ++) . show) (updateResultBranch res)
     , either show (("Repo " ++) . show) (updateErrorOrSuccess res)
     ]

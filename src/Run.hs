@@ -22,6 +22,7 @@ import           System.Directory               ( doesDirectoryExist
                                                 , makeAbsolute
                                                 )
 import           System.FilePath                ( (</>) )
+import           Text.Pretty.Simple             ( pPrint )
 import           Types
 
 run :: RIO App ()
@@ -81,25 +82,22 @@ updateRepo main force repo =
 hardResetCurrentBranch :: FilePath -> RIO App RepoUpdateResult
 hardResetCurrentBranch repo = ifM
   (isCurrentBranchDirty repo)
-  (   Log.debug "Retrieving current branch..."
-  -- inserting this comment just to force line break
-  >>  Git.currentBranch repo
-  >>= either
-        (errorResult repo)
-        (maybe (noCurrentBranchErrorResult repo) (hardResetBranch repo))
+  (Git.currentBranch repo >>= either
+    (errorResult repo)
+    (maybe (noCurrentBranchErrorResult repo) (hardResetBranch repo))
   )
   (RepoUpdateResult repo Nothing <$> Git.updateBranch repo)
 
 isCurrentBranchDirty :: FilePath -> RIO App Bool
 isCurrentBranchDirty repo =
-  Log.debug "Checking branch status..."
+  Log.logMsg "Checking current branch status..."
     >>  Git.isDirty repo
     >>= either (return False <$ Log.logErr) return
 
 hardResetBranch :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
 hardResetBranch repo branch =
   RepoUpdateResult repo (Just branch)
-    <$> (  Log.debug "Hard reset the current branch..."
+    <$> (  Log.logMsg "Hard reset the current branch..."
         >> Git.resetHard repo branch
         )
 
@@ -116,7 +114,7 @@ checkCurrentBranchSwitchUpdate repo =
 checkBranchNotMainSwitchUpdate
   :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
 checkBranchNotMainSwitchUpdate repo branch =
-  Log.logMsg "Checking whether current branch is not the main branch..."
+  Log.logMsg "Checking if current branch is not the main branch..."
     >> if not (Git.isMainBranch branch)
          then retrieveMainBranchSwitchUpdate repo
          else generalSuccessResult repo (Just branch)
@@ -170,8 +168,10 @@ noMainBranchError repo =
 printSummary :: [RepoUpdateResult] -> RIO App ()
 printSummary results = do
   let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
-  mapM_ printResult errors
-  mapM_ printResult successes
-
-printResult :: RepoUpdateResult -> RIO App ()
-printResult res = Log.logMsg (updateResultRepo res)
+  let updated             = filter isUpdated successes
+  Log.logMsg "=============================================================="
+  Log.logMsg $ "Errors occurred: " ++ show (length errors)
+  Log.logMsg $ "Successfully updated: " ++ show (length updated)
+  mapM_ pPrint errors
+  mapM_ pPrint updated
+  where isUpdated res = Right Updated == updateErrorOrSuccess res
