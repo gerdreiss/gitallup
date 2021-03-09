@@ -24,11 +24,13 @@ import           RIO.Process                    ( proc
 import           System.Directory               ( doesDirectoryExist )
 import           System.FilePath                ( (</>) )
 import           Types
+import           Data.List.Extra                ( isPrefixOf )
 
 --
 --
 -- Main module functions
--- 
+--
+-- queries 
 --
 listBranches :: FilePath -> RIO App (Either GitOpError [B.ByteString])
 listBranches repo =
@@ -47,6 +49,13 @@ mainBranch repo =
   _extractMainBranch <$> proc "git" ["-C", repo, "branch"] readProcess
 
 --
+--
+isDirty :: FilePath -> RIO App (Either GitOpError Bool)
+isDirty repo =
+  _extractBranchIsDirty <$> proc "git" ["-C", repo, "status"] readProcess
+
+--
+-- actions
 --
 switchBranch
   :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpSuccess)
@@ -72,11 +81,6 @@ resetHard repo branch =
              ["-C", repo, "reset", "--hard", "origin/" <> C8.unpack branch]
              readProcess
 
---
---
-isDirty :: FilePath -> RIO App (Either GitOpError Bool)
-isDirty repo =
-  _extractBranchIsDirty <$> proc "git" ["-C", repo, "status"] readProcess
 
 --
 --
@@ -124,13 +128,6 @@ _extractBranchIsDirty (ExitFailure code, _, err) = Left $ GitOpError code err
 
 --
 --
-_extractGitOpErrorOrUnit :: ReadProcessResult -> Either GitOpError ()
-_extractGitOpErrorOrUnit (ExitSuccess, _, _) = Right ()
-_extractGitOpErrorOrUnit (ExitFailure code, _, err) =
-  Left $ GitOpError code err
-
---
---
 _extractGitOpErrorOrResult
   :: ReadProcessResult -> Either GitOpError GitOpSuccess
 _extractGitOpErrorOrResult (ExitSuccess, out, _) =
@@ -142,12 +139,10 @@ _extractGitOpErrorOrResult (ExitFailure code, _, err) =
 --
 _extractGitOpResult :: B.ByteString -> GitOpSuccess
 _extractGitOpResult result
-  | B.isPrefixOf "Already up to date" result
-  = UpToDate
-  | B.isPrefixOf "Updating" result || B.isPrefixOf "HEAD is now at" result
-  = Updated
-  | otherwise
-  = GeneralSuccess
+  | "Already up to date" `isPrefixOf` C8.unpack result = UpToDate
+  | "Updating" `isPrefixOf` C8.unpack result = Updated
+  | "HEAD is now at" `isPrefixOf` C8.unpack result = Updated
+  | otherwise = GeneralSuccess
 
 -- 
 -- 
@@ -156,3 +151,6 @@ _extractGitOpResult result
 -- TODO include remotes/origin/master etc...
 _mainBranches :: [B.ByteString]
 _mainBranches = ["master", "main", "develop"]
+
+_mainRemoteBranches :: [B.ByteString]
+_mainRemoteBranches = ("remotes/origin/" <>) <$> _mainBranches
