@@ -3,12 +3,20 @@
 module Types where
 
 import qualified RIO.ByteString.Lazy           as B
+import qualified Data.ByteString.Lazy.Char8    as C8
 import           RIO
 import           RIO.Process
 
 type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
 
-data GitOpSuccess = Updated | UpToDate | GeneralSuccess deriving (Eq)
+data GitOpResultType = UpToDate | Updated | Reset | GeneralSuccess deriving (Eq)
+
+data GitOpResult =
+  GitOpResult
+    { resultType :: !GitOpResultType
+    , resultText :: !B.ByteString
+    }
+
 data GitOpError =
   GitOpError
     { errorCode    :: !Int
@@ -19,7 +27,7 @@ data RepoUpdateResult =
   RepoUpdateResult
     { updateResultRepo     :: !FilePath
     , updateResultBranch   :: !(Maybe B.ByteString)
-    , updateErrorOrSuccess :: !(Either GitOpError GitOpSuccess)
+    , updateErrorOrSuccess :: !(Either GitOpError GitOpResult)
     }
 
 data Options =
@@ -104,23 +112,32 @@ instance HasProcessContext App where
   processContextL =
     lens appProcessContext (\x y -> x { appProcessContext = y })
 
-instance Show GitOpSuccess where
-  show Updated        = "updated successfully."
-  show UpToDate       = "already up to date."
-  show GeneralSuccess = "successful."
+instance Show GitOpResultType where
+  show Updated        = " updated successfully."
+  show Reset          = " reset succesfully."
+  show UpToDate       = " already up to date."
+  show GeneralSuccess = " operation successful, whatever it was ¯\\_(ツ)_/¯"
+
+instance Show GitOpResult where
+  show res = concat
+    [ "Repository "
+    , show (resultType res)
+    , "\nResult text:\n"
+    , C8.unpack (resultText res)
+    ]
 
 instance Show GitOpError where
   show err = concat
     [ "Update failed with code "
-    , show . errorCode $ err
-    , ", error message '"
-    , show . errorMessage $ err
+    , show (errorCode err)
+    , ", message '"
+    , C8.unpack (errorMessage err)
     , "'"
     ]
 
 instance Show RepoUpdateResult where
   show res = concat
     [ "\nResults for " <> updateResultRepo res
-    , maybe "" ((", branch " ++) . show) (updateResultBranch res)
-    , either show (("Repo " ++) . show) (updateErrorOrSuccess res)
+    , maybe " " ((\r -> ":(" ++ r ++ ") ") . C8.unpack) (updateResultBranch res)
+    , either show show (updateErrorOrSuccess res)
     ]

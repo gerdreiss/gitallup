@@ -12,6 +12,7 @@ import qualified Logging                       as Log
 import qualified RIO.ByteString.Lazy           as B
 
 import           Control.Monad.Extra            ( ifM
+                                                , concatMapM
                                                 , partitionM
                                                 )
 import           Data.List                      ( partition )
@@ -65,19 +66,21 @@ listNestedRepos recursive depth excluded subdirs
   = return []
 
 updateRepos :: Bool -> Bool -> [FilePath] -> RIO App [RepoUpdateResult]
-updateRepos main force = mapM (updateRepo main force)
+updateRepos main force = concatMapM (updateRepo main force)
 
-updateRepo :: Bool -> Bool -> FilePath -> RIO App RepoUpdateResult
-updateRepo main force repo =
-  Log.logRepo repo
-    >> (if force
-         then hardResetCurrentBranch repo
-         else RepoUpdateResult repo Nothing <$> Git.updateBranch repo
-       )
-    >> (if main
-         then checkCurrentBranchSwitchUpdate repo
-         else generalSuccessResult repo Nothing
-       )
+updateRepo :: Bool -> Bool -> FilePath -> RIO App [RepoUpdateResult]
+updateRepo main force repo = Log.logRepo repo >> do
+  forceResult <-
+    (if force
+      then hardResetCurrentBranch repo
+      else RepoUpdateResult repo Nothing <$> Git.updateBranch repo
+    )
+  mainResult  <-
+    (if main
+      then checkCurrentBranchSwitchUpdate repo
+      else generalSuccessResult repo Nothing "Done."
+    )
+  return [forceResult, mainResult]
 
 hardResetCurrentBranch :: FilePath -> RIO App RepoUpdateResult
 hardResetCurrentBranch repo = ifM
@@ -117,7 +120,7 @@ checkBranchNotMainSwitchUpdate repo branch =
   Log.logMsg "Checking if current branch is not the main branch..."
     >> if not (Git.isMainBranch branch)
          then retrieveMainBranchSwitchUpdate repo
-         else generalSuccessResult repo (Just branch)
+         else generalSuccessResult repo (Just branch) "It is the main branch."
 
 retrieveMainBranchSwitchUpdate :: FilePath -> RIO App RepoUpdateResult
 retrieveMainBranchSwitchUpdate repo =
@@ -141,15 +144,17 @@ errorResult :: FilePath -> GitOpError -> RIO App RepoUpdateResult
 errorResult repo = return . RepoUpdateResult repo Nothing . Left
 
 generalSuccessResult
-  :: FilePath -> Maybe B.ByteString -> RIO App RepoUpdateResult
-generalSuccessResult repo maybeBranch =
-  return $ RepoUpdateResult repo maybeBranch (Right GeneralSuccess)
+  :: FilePath -> Maybe B.ByteString -> B.ByteString -> RIO App RepoUpdateResult
+generalSuccessResult repo maybeBranch text = return $ RepoUpdateResult
+  repo
+  maybeBranch
+  (Right $ GitOpResult GeneralSuccess text)
 
 noCurrentBranchErrorResult :: FilePath -> RIO App RepoUpdateResult
 noCurrentBranchErrorResult repo =
   return $ RepoUpdateResult repo Nothing (noCurrentBranchError repo)
 
-noCurrentBranchError :: FilePath -> Either GitOpError GitOpSuccess
+noCurrentBranchError :: FilePath -> Either GitOpError GitOpResult
 noCurrentBranchError repo = Left
   $ GitOpError 0 (C8.pack $ "Repo" <> repo <> "has no current branch (WTF?)")
 
@@ -157,7 +162,7 @@ noMainBranchErrorResult :: FilePath -> RIO App RepoUpdateResult
 noMainBranchErrorResult repo =
   return $ RepoUpdateResult repo Nothing (noMainBranchError repo)
 
-noMainBranchError :: FilePath -> Either GitOpError GitOpSuccess
+noMainBranchError :: FilePath -> Either GitOpError GitOpResult
 noMainBranchError repo =
   Left $ GitOpError 0 (C8.pack $ "Repo" <> repo <> "has no main branch (WTF?)")
 
@@ -169,9 +174,12 @@ printSummary :: [RepoUpdateResult] -> RIO App ()
 printSummary results = do
   let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
   let updated             = filter isUpdated successes
-  Log.logMsg "=============================================================="
+  Log.logMsg "\n\n============================================================"
   Log.logMsg $ "Errors occurred: " ++ show (length errors)
   Log.logMsg $ "Successfully updated: " ++ show (length updated)
   mapM_ pPrint errors
   mapM_ pPrint updated
-  where isUpdated res = Right Updated == updateErrorOrSuccess res
+ where
+  isUpdated res = either (const False)
+                         ((`elem` [Updated, Reset]) . resultType)
+                         (updateErrorOrSuccess res)

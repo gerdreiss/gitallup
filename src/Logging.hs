@@ -42,9 +42,12 @@ logRepo repo = logInfo . fromString $ "\nupdating repo: " <> repo
 logMsg :: String -> RIO App ()
 logMsg = logInfo . fromString
 
-logRes :: String -> GitOpSuccess -> RIO App ()
+logRes :: String -> GitOpResult -> RIO App ()
 logRes msg res =
-  logInfo . fromString . concat $ ["Success => ", msg, " ", show res]
+  logInfo
+    . fromString
+    . concat
+    $ ["Success => ", msg, " ", show (resultType res)]
 
 teeLogErr :: GitOpError -> RIO App GitOpError
 teeLogErr err = logErr err >> return err

@@ -59,14 +59,14 @@ isDirty repo =
 -- actions
 --
 switchBranch
-  :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpSuccess)
+  :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpResult)
 switchBranch repo branch =
   _extractGitOpErrorOrResult
     <$> proc "git" ["-C", repo, "switch", C8.unpack branch] readProcess
 
 --
 --
-updateBranch :: FilePath -> RIO App (Either GitOpError GitOpSuccess)
+updateBranch :: FilePath -> RIO App (Either GitOpError GitOpResult)
 updateBranch repo =
   proc "git" ["-C", repo, "fetch", "--all"] readProcess
     >>  _extractGitOpErrorOrResult
@@ -74,12 +74,11 @@ updateBranch repo =
 
 --
 --
-resetHard
-  :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpSuccess)
+resetHard :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpResult)
 resetHard repo branch =
   _extractGitOpErrorOrResult
     <$> proc "git"
-             ["-C", repo, "reset", "--hard", "origin/" <> C8.unpack branch]
+             ["-C", repo, "reset", "--hard", "origin/" ++ C8.unpack branch]
              readProcess
 
 
@@ -129,29 +128,32 @@ _extractBranchIsDirty (ExitFailure code, _, err) = Left $ GitOpError code err
 
 --
 --
-_extractGitOpErrorOrResult
-  :: ReadProcessResult -> Either GitOpError GitOpSuccess
+_extractGitOpErrorOrResult :: ReadProcessResult -> Either GitOpError GitOpResult
 _extractGitOpErrorOrResult (ExitSuccess, out, _) =
-  Right $ _extractGitOpResult out
+  Right $ GitOpResult (_extractGitOpResultType out) out
 _extractGitOpErrorOrResult (ExitFailure code, _, err) =
   Left $ GitOpError code err
 
 --
 --
-_extractGitOpResult :: B.ByteString -> GitOpSuccess
-_extractGitOpResult result
-  | "Already up to date" `isPrefixOf` C8.unpack result = UpToDate
-  | "Updating" `isPrefixOf` C8.unpack result = Updated
-  | "HEAD is now at" `isPrefixOf` C8.unpack result = Updated
-  | otherwise = GeneralSuccess
+_extractGitOpResultType :: B.ByteString -> GitOpResultType
+_extractGitOpResultType result | isUpdated result  = Updated
+                               | isReset result    = Reset
+                               | isUpToDate result = UpToDate
+                               | otherwise         = GeneralSuccess
+ where
+  isUpToDate = isPrefixOf "Already up to date" . C8.unpack
+  isUpdated  = isPrefixOf "Updating" . C8.unpack
+  isReset    = isPrefixOf "HEAD is now at" . C8.unpack
 
 -- 
 -- 
 -- quasi constants
 --
--- TODO include remotes/origin/master etc...
 _mainBranches :: [B.ByteString]
 _mainBranches = ["master", "main", "develop"]
 
+--
+-- TODO include remotes/origin/master etc...
 _mainRemoteBranches :: [B.ByteString]
 _mainRemoteBranches = ("remotes/origin/" <>) <$> _mainBranches
