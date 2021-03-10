@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c95163430c6a4f4a3ed75f94e046a3763fbcd08112973869de241421231659e5
+-- hash: 031a11b82ce0d838b8a500685da2433c749f980410d2e3ac63b5e6ea8bcacbf3
 
 name:           gitallup
 version:        0.2.0.0
@@ -49,7 +49,7 @@ library
     , split
   default-language: Haskell2010
 
-executable gitallup
+executable gitallup-exe
   main-is: Main.hs
   other-modules:
       Paths_gitallup

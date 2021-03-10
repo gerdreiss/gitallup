@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+
 module Git
   ( listBranches
   , currentBranch
@@ -61,7 +62,7 @@ switchBranch
   :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpSuccess)
 switchBranch repo branch =
   _extractGitOpErrorOrResult
-    <$> proc "git" ["-C", repo, "checkout", C8.unpack branch] readProcess
+    <$> proc "git" ["-C", repo, "switch", C8.unpack branch] readProcess
 
 --
 --
