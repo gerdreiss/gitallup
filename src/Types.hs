@@ -140,4 +140,5 @@ instance Show RepoUpdateResult where
     [ "\nResults for " <> updateResultRepo res
     , maybe " " ((\r -> ":(" ++ r ++ ") ") . C8.unpack) (updateResultBranch res)
     , either show show (updateErrorOrSuccess res)
+    , "\n"
     ]
