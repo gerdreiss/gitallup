@@ -1,52 +1,69 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 module Logging
   ( logInput
   , logRepo
-  , logSuc
+  , logMsg
+  , logRes
   , logErr
-  , logWrn
+  , debug
+  , error
   )
 where
 
-import           RIO                     hiding ( force )
-import           Types                          ( App )
+import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
+
+import           RIO                     hiding ( force
+                                                , error
+                                                )
+import           Types
 
 logInput :: Bool -> Int -> Bool -> Bool -> FilePath -> FilePath -> RIO App ()
 logInput recursive depth main force exclude path =
   logInfo
     . fromString
     . concat
-    $ [ mkStrUpdate force
-      , mkStrRecursive recursive depth
-      , mkStrMain main
+    $ [ mkStrUpdate
+      , mkStrRecursive
+      , mkStrMain
       , "GIT repos in "
       , _resolvePath path
-      , mkStrExclude exclude
+      , mkStrExclude
       ]
-
  where
-  mkStrUpdate f = if f then "Force updating " else "Updating "
-  mkStrRecursive r d = if r then "recursively " <> mkStrDepth d else " "
-  mkStrDepth d = if d > -1 then "up to a depth of " <> show d else " "
-  mkStrMain m = if m then "main branches of the " else " "
-  mkStrExclude x = if null x then " " else "excluding " <> exclude
+  mkStrUpdate    = if force then "Force updating " else "Updating "
+  mkStrRecursive = if recursive then "recursively " ++ mkStrDepth else " "
+  mkStrDepth     = if depth > -1 then "up to a depth of " ++ show depth else " "
+  mkStrMain      = if main then "main branches of the " else " "
+  mkStrExclude   = if null exclude then " " else "excluding " ++ exclude
 
 logRepo :: FilePath -> RIO App ()
-logRepo repo = logInfo . fromString $ "updating repo: " <> repo
+logRepo repo = logInfo . fromString $ "updating repo: " ++ repo
 
-logSuc :: String -> RIO App ()
-logSuc msg = logInfo . fromString $ "Success: " ++ msg
+logMsg :: String -> RIO App ()
+logMsg = logInfo . fromString
 
-logErr :: Int -> String -> RIO App ()
-logErr code msg =
-  logError . fromString . concat $ ["Failed: ", show code, ": ", msg]
+logRes :: String -> GitOpResult -> RIO App ()
+logRes msg res =
+  logInfo
+    . fromString
+    . concat
+    $ ["Success => ", msg, " ", show (resultType res)]
 
-logWrn :: String -> RIO App ()
-logWrn msg = logInfo . fromString $ "Warning: " ++ msg
+logErr :: GitOpError -> RIO App ()
+logErr err =
+  logError
+    . fromString
+    . concat
+    $ ["Failed => ", show (errorCode err), " - ", C8.unpack (errorMessage err)]
+
+debug :: String -> RIO App ()
+debug = logDebug . fromString
+
+error :: String -> RIO App ()
+error = logError . fromString
 
 _resolvePath :: FilePath -> FilePath
 _resolvePath path | path == "."  = "current directory "
                   | path == ".." = "parent directory "
                   | path == "~"  = "home directory "
-                  | otherwise    = path <> " "
-
+                  | otherwise    = path ++ " "

@@ -1,12 +1,46 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Types where
 
-import qualified Data.ByteString.Lazy          as B
+import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
+import qualified RIO.ByteString.Lazy           as B
+
 import           RIO
 import           RIO.Process
 
+--
+--
+-- Types and data structures
+--
+
 type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
+
+data GitOpResultType
+  = UpToDate
+  | Updated
+  | Reset
+  | GeneralSuccess
+  deriving (Eq)
+
+data GitOpResult =
+  GitOpResult
+    { resultType :: !GitOpResultType
+    , resultText :: !B.ByteString
+    }
+
+data GitOpError =
+  GitOpError
+    { errorCode    :: !Int
+    , errorMessage :: !B.ByteString
+    } deriving (Eq)
+
+data RepoUpdateResult =
+  RepoUpdateResult
+    { updateResultRepo     :: !FilePath
+    , updateResultBranch   :: !(Maybe B.ByteString)
+    , updateErrorOrSuccess :: !(Either GitOpError GitOpResult)
+    }
 
 data Options =
   Options
@@ -24,7 +58,13 @@ data App =
     { appLogFunc        :: !LogFunc
     , appProcessContext :: !ProcessContext
     , appOptions        :: !Options
+    , appUserHome       :: !FilePath
     }
+
+--
+--
+-- Type classes for lenses
+--
 
 class HasDirectory env where
   directoryL :: Lens' env FilePath
@@ -43,6 +83,14 @@ class HasForce env where
 
 class HasExclude env where
   excludeL :: Lens' env FilePath
+
+class HasUserHome env where
+  userHomeL :: Lens' env FilePath
+
+-- 
+-- 
+-- Instances
+--
 
 instance HasDirectory App where
   directoryL = appOptionsL . optionsDirectoryL
@@ -89,3 +137,37 @@ instance HasLogFunc App where
 instance HasProcessContext App where
   processContextL =
     lens appProcessContext (\x y -> x { appProcessContext = y })
+
+instance HasUserHome App where
+  userHomeL = lens appUserHome (\x y -> x { appUserHome = y })
+
+instance Show GitOpResultType where
+  show Updated        = " updated successfully."
+  show Reset          = " reset succesfully."
+  show UpToDate       = " already up to date."
+  show GeneralSuccess = " operation successful, whatever it was ¯\\_(ツ)_/¯"
+
+instance Show GitOpResult where
+  show res = concat
+    [ show (resultType res)
+    , "\nResult text:\n"
+    , C8.unpack . C8.intercalate "\n" . take 10 . C8.lines . resultText $ res
+    , "\n..."
+    ]
+
+instance Show GitOpError where
+  show err = concat
+    [ "Update failed with "
+    , show (errorCode err)
+    , " - "
+    , C8.unpack (errorMessage err)
+    ]
+
+instance Show RepoUpdateResult where
+  show res = concat
+    [ "\nRepo "
+    , updateResultRepo res
+    , maybe " " ((\r -> ":(" ++ r ++ ") ") . C8.unpack) (updateResultBranch res)
+    , either show show (updateErrorOrSuccess res)
+    , "\n"
+    ]

@@ -1,16 +1,19 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
 import           Options.Applicative
 import           Options.Applicative.Simple
-import           RIO hiding(force)
-import           RIO.Process
-import           Run
+import           RIO                     hiding ( force )
+import           RIO.Directory                  ( getHomeDirectory )
+import           RIO.Process                    ( mkDefaultProcessContext )
+import           Run                            ( run )
 import           Types
 
 import qualified Paths_gitallup
+
 
 main :: IO ()
 main = do
@@ -23,8 +26,9 @@ main = do
       empty
   lo <- setLogUseColor True <$> logOptionsHandle stderr (optionsVerbose opts)
   pc <- mkDefaultProcessContext
+  home <- getHomeDirectory
   withLogFunc lo $ \lf ->
-    let app = App { appLogFunc = lf, appProcessContext = pc, appOptions = opts }
+    let app = App { appLogFunc = lf, appProcessContext = pc, appOptions = opts, appUserHome = home }
      in runRIO app run
 
 options :: Parser Options
@@ -38,7 +42,7 @@ options =
     <*> exclude
     <*> verbose
 
-directory :: Parser String
+directory :: Parser FilePath 
 directory =
   strOption
     ( long "path"
@@ -85,7 +89,7 @@ force =
         <> help "Force update overriding any local changes?"
     )
 
-exclude :: Parser String
+exclude :: Parser FilePath
 exclude =
   strOption
     ( long "exclude"

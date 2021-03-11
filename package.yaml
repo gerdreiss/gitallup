@@ -28,6 +28,7 @@ dependencies:
   - bytestring
   - extra
   - split
+  - pretty-simple
 
 ghc-options:
   - -Wall
@@ -42,7 +43,7 @@ library:
   source-dirs: src
 
 executables:
-  gitallup:
+  gitallup-exe:
     main: Main.hs
     source-dirs: app
     dependencies:
