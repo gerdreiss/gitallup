@@ -1,8 +1,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8
+import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -15,7 +16,12 @@ import           RIO.Process
 
 type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
 
-data GitOpResultType = UpToDate | Updated | Reset | GeneralSuccess deriving (Eq)
+data GitOpResultType
+  = UpToDate
+  | Updated
+  | Reset
+  | GeneralSuccess
+  deriving (Eq)
 
 data GitOpResult =
   GitOpResult
@@ -57,7 +63,7 @@ data App =
 
 --
 --
--- Type classes
+-- Type classes for lenses
 --
 
 class HasDirectory env where
@@ -145,8 +151,7 @@ instance Show GitOpResult where
   show res = concat
     [ show (resultType res)
     , "\nResult text:\n"
-    , C8.unpack
-      $ C8.intercalate (C8.pack "\n") (take 6 . C8.lines . resultText $ res)
+    , C8.unpack . C8.intercalate "\n" . take 10 . C8.lines . resultText $ res
     , "\n..."
     ]
 

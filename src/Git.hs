@@ -14,15 +14,13 @@ module Git
   )
 where
 
-import qualified RIO.ByteString.Lazy           as B
 import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
-
 import           RIO
+import qualified RIO.ByteString.Lazy           as B
+
 import           RIO.Directory                  ( doesDirectoryExist )
 import           RIO.FilePath                   ( (</>) )
-import           RIO.List                       ( find
-                                                , isPrefixOf
-                                                )
+import           RIO.List                       ( find )
 import           RIO.Process                    ( proc
                                                 , readProcess
                                                 )
@@ -32,7 +30,7 @@ import           Types
 --
 -- Main module functions
 --
--- queries 
+-- queries
 --
 listBranches :: FilePath -> RIO App (Either GitOpError [B.ByteString])
 listBranches repo =
@@ -87,7 +85,6 @@ resetHard repo branch =
              ["-C", repo, "reset", "--hard", "origin/" ++ C8.unpack branch]
              readProcess
 
-
 --
 --
 -- Utilities
@@ -96,22 +93,22 @@ resetHard repo branch =
 isGitRepo :: FilePath -> IO Bool
 isGitRepo dir = doesDirectoryExist (dir </> ".git")
 
--- 
--- 
+--
+--
 -- Private functions
 --
 --
 _extractBranchList :: ReadProcessResult -> Either GitOpError [B.ByteString]
-_extractBranchList (ExitSuccess, out, _) = Right $ B.drop 2 <$> C8.lines out
-_extractBranchList (ExitFailure code, _, err) = Left $ GitOpError code err
+_extractBranchList (ExitSuccess, out, _) = Right (B.drop 2 <$> C8.lines out)
+_extractBranchList (ExitFailure code, _, err) = Left (GitOpError code err)
 
--- 
+--
 --
 _extractCurrentBranch
   :: ReadProcessResult -> Either GitOpError (Maybe B.ByteString)
 _extractCurrentBranch (ExitSuccess, out, _) =
   Right . fmap (B.drop 2) . find (B.isPrefixOf "* ") . C8.lines $ out
-_extractCurrentBranch (ExitFailure code, _, err) = Left $ GitOpError code err
+_extractCurrentBranch (ExitFailure code, _, err) = Left (GitOpError code err)
 
 --
 --
@@ -119,7 +116,7 @@ _extractMainBranch
   :: ReadProcessResult -> Either GitOpError (Maybe B.ByteString)
 _extractMainBranch (ExitSuccess, out, _) =
   Right
-    . fmap (B.drop 38) -- length of "remotes/origin/HEAD -> origin/"
+    . fmap (B.drop 30) -- length of "remotes/origin/HEAD -> origin/"
     . find (B.isPrefixOf "remotes/origin/HEAD")
     . fmap (B.drop 2)
     . C8.lines
@@ -130,8 +127,8 @@ _extractMainBranch (ExitFailure code, _, err) = Left $ GitOpError code err
 --
 _extractBranchIsDirty :: ReadProcessResult -> Either GitOpError Bool
 _extractBranchIsDirty (ExitSuccess, out, _) =
-  Right . not $ B.isSuffixOf (C8.pack "working tree clean") out
-_extractBranchIsDirty (ExitFailure code, _, err) = Left $ GitOpError code err
+  Right . not $ B.isSuffixOf "working tree clean" out
+_extractBranchIsDirty (ExitFailure code, _, err) = Left (GitOpError code err)
 
 --
 --
@@ -139,7 +136,7 @@ _extractGitOpErrorOrResult :: ReadProcessResult -> Either GitOpError GitOpResult
 _extractGitOpErrorOrResult (ExitSuccess, out, _) =
   Right $ GitOpResult (_extractGitOpResultType out) out
 _extractGitOpErrorOrResult (ExitFailure code, _, err) =
-  Left $ GitOpError code err
+  Left (GitOpError code err)
 
 --
 --
@@ -149,19 +146,6 @@ _extractGitOpResultType result | isUpdated result  = Updated
                                | isUpToDate result = UpToDate
                                | otherwise         = GeneralSuccess
  where
-  isUpToDate = isPrefixOf "Already up to date" . C8.unpack
-  isUpdated  = isPrefixOf "Updating" . C8.unpack
-  isReset    = isPrefixOf "HEAD is now at" . C8.unpack
-
--- 
--- 
--- quasi constants
---
-_mainBranches :: [B.ByteString]
-_mainBranches = ["master", "main", "develop"]
-
---
--- TODO include remotes/origin/master etc...
---
-_mainRemoteBranches :: [B.ByteString]
-_mainRemoteBranches = ("remotes/origin/" <>) <$> _mainBranches
+  isUpToDate = B.isPrefixOf "Already up to date"
+  isUpdated  = B.isPrefixOf "Updating"
+  isReset    = B.isPrefixOf "HEAD is now at"

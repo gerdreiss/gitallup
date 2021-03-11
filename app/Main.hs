@@ -4,15 +4,16 @@
 
 module Main where
 
-import Options.Applicative
-import Options.Applicative.Simple
-import RIO hiding(force)
-import RIO.Directory ( getHomeDirectory )
-import RIO.Process ( mkDefaultProcessContext )
-import Run ( run )
-import Types
+import           Options.Applicative
+import           Options.Applicative.Simple
+import           RIO                     hiding ( force )
+import           RIO.Directory                  ( getHomeDirectory )
+import           RIO.Process                    ( mkDefaultProcessContext )
+import           Run                            ( run )
+import           Types
 
 import qualified Paths_gitallup
+
 
 main :: IO ()
 main = do
