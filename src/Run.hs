@@ -15,13 +15,9 @@ import           Control.Monad.Extra            ( ifM
                                                 , concatMapM
                                                 , partitionM
                                                 )
-import           Data.List.Extra                ( groupOn )
 import           Data.List.Split                ( splitOn )
 import           RIO                     hiding ( force )
-import           RIO.List                       ( sortOn
-                                                , partition
-                                                )
-import           RIO.List.Partial               ( head )
+import           RIO.List                       ( partition )
 import           System.Directory               ( doesDirectoryExist
                                                 , listDirectory
                                                 , makeAbsolute

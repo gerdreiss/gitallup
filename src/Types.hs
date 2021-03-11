@@ -143,7 +143,12 @@ instance Show GitOpResultType where
 
 instance Show GitOpResult where
   show res = concat
-    [show (resultType res), "\nResult text:\n", C8.unpack (resultText res)]
+    [ show (resultType res)
+    , "\nResult text:\n"
+    , C8.unpack
+      $ C8.intercalate (C8.pack "\n") (take 6 . C8.lines . resultText $ res)
+    , "\n..."
+    ]
 
 instance Show GitOpError where
   show err = concat
