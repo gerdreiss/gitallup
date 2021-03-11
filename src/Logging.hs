@@ -34,10 +34,10 @@ logInput recursive depth main force exclude path =
   mkStrRecursive = if recursive then "recursively " ++ mkStrDepth else " "
   mkStrDepth     = if depth > -1 then "up to a depth of " ++ show depth else " "
   mkStrMain      = if main then "main branches of the " else " "
-  mkStrExclude   = if null exclude then " " else "excluding " <> exclude
+  mkStrExclude   = if null exclude then " " else "excluding " ++ exclude
 
 logRepo :: FilePath -> RIO App ()
-logRepo repo = logInfo . fromString $ "updating repo: " <> repo
+logRepo repo = logInfo . fromString $ "updating repo: " ++ repo
 
 logMsg :: String -> RIO App ()
 logMsg = logInfo . fromString
@@ -66,4 +66,4 @@ _resolvePath :: FilePath -> FilePath
 _resolvePath path | path == "."  = "current directory "
                   | path == ".." = "parent directory "
                   | path == "~"  = "home directory "
-                  | otherwise    = path <> " "
+                  | otherwise    = path ++ " "

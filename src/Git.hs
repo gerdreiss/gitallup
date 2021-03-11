@@ -15,9 +15,9 @@ module Git
 where
 
 import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
-import           RIO
 import qualified RIO.ByteString.Lazy           as B
 
+import           RIO
 import           RIO.Directory                  ( doesDirectoryExist )
 import           RIO.FilePath                   ( (</>) )
 import           RIO.List                       ( find )
