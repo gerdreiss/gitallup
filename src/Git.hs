@@ -15,17 +15,18 @@ module Git
 where
 
 import qualified RIO.ByteString.Lazy           as B
-import qualified Data.ByteString.Lazy.Char8    as C8
+import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
 
-import           Data.List                      ( find )
 import           RIO
+import           RIO.Directory                  ( doesDirectoryExist )
+import           RIO.FilePath                   ( (</>) )
+import           RIO.List                       ( find
+                                                , isPrefixOf
+                                                )
 import           RIO.Process                    ( proc
                                                 , readProcess
                                                 )
-import           System.Directory               ( doesDirectoryExist )
-import           System.FilePath                ( (</>) )
 import           Types
-import           Data.List.Extra                ( isPrefixOf )
 
 --
 --
@@ -155,5 +156,6 @@ _mainBranches = ["master", "main", "develop"]
 
 --
 -- TODO include remotes/origin/master etc...
+--
 _mainRemoteBranches :: [B.ByteString]
 _mainRemoteBranches = ("remotes/origin/" <>) <$> _mainBranches

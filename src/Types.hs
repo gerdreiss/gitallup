@@ -2,8 +2,9 @@
 
 module Types where
 
-import qualified RIO.ByteString.Lazy           as B
 import qualified Data.ByteString.Lazy.Char8    as C8
+import qualified RIO.ByteString.Lazy           as B
+
 import           RIO
 import           RIO.Process
 
@@ -46,6 +47,7 @@ data App =
     { appLogFunc        :: !LogFunc
     , appProcessContext :: !ProcessContext
     , appOptions        :: !Options
+    , appUserHome       :: !FilePath
     }
 
 class HasDirectory env where
@@ -65,6 +67,9 @@ class HasForce env where
 
 class HasExclude env where
   excludeL :: Lens' env FilePath
+
+class HasUserHome env where
+  userHomeL :: Lens' env FilePath
 
 instance HasDirectory App where
   directoryL = appOptionsL . optionsDirectoryL
@@ -112,6 +117,9 @@ instance HasProcessContext App where
   processContextL =
     lens appProcessContext (\x y -> x { appProcessContext = y })
 
+instance HasUserHome App where
+  userHomeL = lens appUserHome (\x y -> x { appUserHome = y })
+
 instance Show GitOpResultType where
   show Updated        = " updated successfully."
   show Reset          = " reset succesfully."
@@ -120,11 +128,7 @@ instance Show GitOpResultType where
 
 instance Show GitOpResult where
   show res = concat
-    [ "Repository "
-    , show (resultType res)
-    , "\nResult text:\n"
-    , C8.unpack (resultText res)
-    ]
+    [show (resultType res), "\nResult text:\n", C8.unpack (resultText res)]
 
 instance Show GitOpError where
   show err = concat
@@ -136,7 +140,8 @@ instance Show GitOpError where
 
 instance Show RepoUpdateResult where
   show res = concat
-    [ "\n" <> updateResultRepo res
+    [ "\nRepo "
+    , updateResultRepo res
     , maybe " " ((\r -> ":(" ++ r ++ ") ") . C8.unpack) (updateResultBranch res)
     , either show show (updateErrorOrSuccess res)
     , "\n"

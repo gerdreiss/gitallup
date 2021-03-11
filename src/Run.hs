@@ -34,10 +34,11 @@ run = do
   main      <- view mainL
   force     <- view forceL
   exclude   <- view excludeL
+  userHome  <- view userHomeL
   Log.logInput recursive depth main force exclude root
   listRepos recursive depth (splitOn "," exclude) root
     >>= updateRepos main force
-    >>= printSummary
+    >>= printSummary userHome
 
 listRepos :: Bool -> Int -> [FilePath] -> FilePath -> RIO App [FilePath]
 listRepos recursive depth excluded root = do
@@ -170,16 +171,26 @@ noMainBranchError repo =
 --
 -- prints the update summary
 --
-printSummary :: [RepoUpdateResult] -> RIO App ()
-printSummary results = do
-  let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
-  let updated             = filter isUpdated successes
+printSummary :: FilePath -> [RepoUpdateResult] -> RIO App ()
+printSummary userHome results = do
+  let newResults = fmap
+        (\r -> r { updateResultRepo = dropUserHome . updateResultRepo $ r })
+        results
+  let (errors, successes) =
+        partition (isLeft . updateErrorOrSuccess) newResults
+  let upToDate = filter isUpToDate successes
+  let updated  = filter isUpdated successes
   Log.logMsg "\n\n============================================================"
-  Log.logMsg $ "Errors occurred: " ++ show (length errors)
-  Log.logMsg $ "Successfully updated: " ++ show (length updated)
+  Log.logMsg $ "Errors occurred  : " ++ show (length errors)
+  Log.logMsg $ "Repos up to date : " ++ show (length upToDate)
+  Log.logMsg $ "Repos updated    : " ++ show (length updated)
+  Log.logMsg "\n"
   mapM_ pPrint errors
   mapM_ pPrint updated
  where
+  dropUserHome = ("~" ++) . drop (length userHome)
+  isUpToDate res =
+    either (const False) ((== UpToDate) . resultType) (updateErrorOrSuccess res)
   isUpdated res = either (const False)
                          ((`elem` [Updated, Reset]) . resultType)
                          (updateErrorOrSuccess res)
