@@ -37,7 +37,7 @@ logInput recursive depth main force exclude path =
   mkStrExclude x = if null x then " " else "excluding " <> exclude
 
 logRepo :: FilePath -> RIO App ()
-logRepo repo = logInfo . fromString $ "\nupdating repo: " <> repo
+logRepo repo = logInfo . fromString $ "updating repo: " <> repo
 
 logMsg :: String -> RIO App ()
 logMsg = logInfo . fromString
