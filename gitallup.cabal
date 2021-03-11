@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 031a11b82ce0d838b8a500685da2433c749f980410d2e3ac63b5e6ea8bcacbf3
+-- hash: d154f85b2ed1aa800fc37708fc21f219396e454271a3fde5234d141aefe779bc
 
 name:           gitallup
-version:        0.2.0.0
+version:        0.3.0.0
 description:    Please see the README on Github at <https://github.com/githubuser/gitallup#readme>
 homepage:       https://github.com/gerdreiss/gitallup#readme
 bug-reports:    https://github.com/gerdreiss/gitallup/issues
