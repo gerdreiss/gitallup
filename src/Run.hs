@@ -15,9 +15,13 @@ import           Control.Monad.Extra            ( ifM
                                                 , concatMapM
                                                 , partitionM
                                                 )
-import           Data.List                      ( partition )
+import           Data.List.Extra                ( groupOn )
 import           Data.List.Split                ( splitOn )
 import           RIO                     hiding ( force )
+import           RIO.List                       ( sortOn
+                                                , partition
+                                                )
+import           RIO.List.Partial               ( head )
 import           System.Directory               ( doesDirectoryExist
                                                 , listDirectory
                                                 , makeAbsolute
@@ -25,6 +29,7 @@ import           System.Directory               ( doesDirectoryExist
 import           System.FilePath                ( (</>) )
 import           Text.Pretty.Simple             ( pPrint )
 import           Types
+import           Util                           ( toSet )
 
 run :: RIO App ()
 run = do
@@ -101,7 +106,7 @@ isCurrentBranchDirty repo =
 hardResetBranch :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
 hardResetBranch repo branch =
   RepoUpdateResult repo (Just branch)
-    <$> (  Log.debug "Hard reset the current branch..."
+    <$> (  Log.logMsg ("Hard reset the branch " ++ C8.unpack branch)
         >> Git.resetHard repo branch
         )
 
@@ -179,24 +184,32 @@ noMainBranchError repo =
 --
 printSummary :: FilePath -> [RepoUpdateResult] -> RIO App ()
 printSummary userHome results = do
-  let newResults = fmap
-        (\r -> r { updateResultRepo = dropUserHome . updateResultRepo $ r })
-        results
+  let
+    newResults =
+      fmap (\r -> r { updateResultRepo = dropUserHome . updateResultRepo $ r })
+        . filter (not . isGeneralSuccess)
+        $ results
   let (errors, successes) =
         partition (isLeft . updateErrorOrSuccess) newResults
   let upToDate = filter isUpToDate successes
   let updated  = filter isUpdated successes
   Log.logMsg "\n\n============================================================"
+  Log.logMsg $ "Repos processed  : " ++ show (length $ rmdups newResults)
   Log.logMsg $ "Errors occurred  : " ++ show (length errors)
-  Log.logMsg $ "Repos up to date : " ++ show (length upToDate)
-  Log.logMsg $ "Repos updated    : " ++ show (length updated)
+  Log.logMsg $ "Repos up to date : " ++ show (length . rmdups $ upToDate)
+  Log.logMsg $ "Repos updated    : " ++ show (length . rmdups $ updated)
   Log.logMsg "\n"
   mapM_ pPrint errors
   mapM_ pPrint updated
  where
   dropUserHome = ("~" ++) . drop (length userHome)
-  isUpToDate res =
-    either (const False) ((== UpToDate) . resultType) (updateErrorOrSuccess res)
+  isGeneralSuccess res = either (const False)
+                                ((== GeneralSuccess) . resultType)
+                                (updateErrorOrSuccess res)
+  isUpToDate res = either (const False)
+                          ((== UpToDate) . resultType)
+                          (updateErrorOrSuccess res)
   isUpdated res = either (const False)
                          ((`elem` [Updated, Reset]) . resultType)
                          (updateErrorOrSuccess res)
+  rmdups = toSet updateResultRepo

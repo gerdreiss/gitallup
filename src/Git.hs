@@ -130,7 +130,7 @@ _extractMainBranch (ExitFailure code, _, err) = Left $ GitOpError code err
 --
 _extractBranchIsDirty :: ReadProcessResult -> Either GitOpError Bool
 _extractBranchIsDirty (ExitSuccess, out, _) =
-  Right . not $ B.isSuffixOf "working tree clean" out
+  Right . not $ B.isSuffixOf (C8.pack "working tree clean") out
 _extractBranchIsDirty (ExitFailure code, _, err) = Left $ GitOpError code err
 
 --
