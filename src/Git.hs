@@ -48,7 +48,12 @@ currentBranch repo =
 --
 mainBranch :: FilePath -> RIO App (Either GitOpError (Maybe B.ByteString))
 mainBranch repo =
-  _extractMainBranch <$> proc "git" ["-C", repo, "branch"] readProcess
+  _extractMainBranch <$> proc "git" ["-C", repo, "branch", "--all"] readProcess
+
+--
+--
+isMainBranch :: FilePath -> B.ByteString -> RIO App (Either GitOpError Bool)
+isMainBranch repo branch = fmap (Just branch ==) <$> mainBranch repo
 
 --
 --
@@ -91,17 +96,13 @@ resetHard repo branch =
 isGitRepo :: FilePath -> IO Bool
 isGitRepo dir = doesDirectoryExist (dir </> ".git")
 
-isMainBranch :: B.ByteString -> Bool
-isMainBranch branch = branch `elem` _mainBranches
-
 -- 
 -- 
 -- Private functions
 --
 --
 _extractBranchList :: ReadProcessResult -> Either GitOpError [B.ByteString]
-_extractBranchList (ExitSuccess, out, _) =
-  Right . fmap (B.drop 2) . C8.lines $ out
+_extractBranchList (ExitSuccess, out, _) = Right $ B.drop 2 <$> C8.lines out
 _extractBranchList (ExitFailure code, _, err) = Left $ GitOpError code err
 
 -- 
@@ -117,7 +118,12 @@ _extractCurrentBranch (ExitFailure code, _, err) = Left $ GitOpError code err
 _extractMainBranch
   :: ReadProcessResult -> Either GitOpError (Maybe B.ByteString)
 _extractMainBranch (ExitSuccess, out, _) =
-  Right . find (`elem` _mainBranches) . fmap (B.drop 2) . C8.lines $ out
+  Right
+    . fmap (B.drop 38) -- length of "remotes/origin/HEAD -> origin/"
+    . find (B.isPrefixOf "remotes/origin/HEAD")
+    . fmap (B.drop 2)
+    . C8.lines
+    $ out
 _extractMainBranch (ExitFailure code, _, err) = Left $ GitOpError code err
 
 --

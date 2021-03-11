@@ -118,10 +118,16 @@ checkCurrentBranchSwitchUpdate repo =
 checkBranchNotMainSwitchUpdate
   :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
 checkBranchNotMainSwitchUpdate repo branch =
-  Log.debug "Checking if current branch is not the main branch..."
-    >> if not (Git.isMainBranch branch)
-         then retrieveMainBranchSwitchUpdate repo
-         else generalSuccessResult repo (Just branch) "It is the main branch."
+  Log.debug "Checking if current branch is the main branch..."
+    >>  Git.isMainBranch repo branch
+    >>= either
+          (errorResult repo)
+          (\isMainBranch -> if not isMainBranch
+            then retrieveMainBranchSwitchUpdate repo
+            else generalSuccessResult repo
+                                      (Just branch)
+                                      "It is the main branch."
+          )
 
 retrieveMainBranchSwitchUpdate :: FilePath -> RIO App RepoUpdateResult
 retrieveMainBranchSwitchUpdate repo =

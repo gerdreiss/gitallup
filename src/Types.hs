@@ -8,6 +8,11 @@ import qualified RIO.ByteString.Lazy           as B
 import           RIO
 import           RIO.Process
 
+--
+--
+-- Types and data structures
+--
+
 type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
 
 data GitOpResultType = UpToDate | Updated | Reset | GeneralSuccess deriving (Eq)
@@ -50,6 +55,11 @@ data App =
     , appUserHome       :: !FilePath
     }
 
+--
+--
+-- Type classes
+--
+
 class HasDirectory env where
   directoryL :: Lens' env FilePath
 
@@ -70,6 +80,11 @@ class HasExclude env where
 
 class HasUserHome env where
   userHomeL :: Lens' env FilePath
+
+-- 
+-- 
+-- Instances
+--
 
 instance HasDirectory App where
   directoryL = appOptionsL . optionsDirectoryL
