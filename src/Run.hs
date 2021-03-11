@@ -93,14 +93,14 @@ hardResetCurrentBranch repo = ifM
 
 isCurrentBranchDirty :: FilePath -> RIO App Bool
 isCurrentBranchDirty repo =
-  Log.logMsg "Checking current branch status..."
+  Log.debug "Checking current branch status..."
     >>  Git.isDirty repo
     >>= either (return False <$ Log.logErr) return
 
 hardResetBranch :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
 hardResetBranch repo branch =
   RepoUpdateResult repo (Just branch)
-    <$> (  Log.logMsg "Hard reset the current branch..."
+    <$> (  Log.debug "Hard reset the current branch..."
         >> Git.resetHard repo branch
         )
 
@@ -117,14 +117,14 @@ checkCurrentBranchSwitchUpdate repo =
 checkBranchNotMainSwitchUpdate
   :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
 checkBranchNotMainSwitchUpdate repo branch =
-  Log.logMsg "Checking if current branch is not the main branch..."
+  Log.debug "Checking if current branch is not the main branch..."
     >> if not (Git.isMainBranch branch)
          then retrieveMainBranchSwitchUpdate repo
          else generalSuccessResult repo (Just branch) "It is the main branch."
 
 retrieveMainBranchSwitchUpdate :: FilePath -> RIO App RepoUpdateResult
 retrieveMainBranchSwitchUpdate repo =
-  Log.logMsg "Retrieving main branch..."
+  Log.debug "Retrieving main branch..."
   -- inserting this comment just to force line break
     >>  Git.mainBranch repo
     >>= either
@@ -134,9 +134,9 @@ retrieveMainBranchSwitchUpdate repo =
 switchBranchUpdate :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
 switchBranchUpdate repo branch =
   RepoUpdateResult repo (Just branch)
-    <$> (  Log.logMsg ("Switching to " <> show branch <> "...")
+    <$> (  Log.debug ("Switching to " <> show branch <> "...")
         >> Git.switchBranch repo branch
-        >> Log.logMsg "Updating..."
+        >> Log.debug "Updating..."
         >> Git.updateBranch repo
         )
 

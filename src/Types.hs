@@ -128,16 +128,15 @@ instance Show GitOpResult where
 
 instance Show GitOpError where
   show err = concat
-    [ "Update failed with code "
+    [ "Update failed with "
     , show (errorCode err)
-    , ", message '"
+    , " - "
     , C8.unpack (errorMessage err)
-    , "'"
     ]
 
 instance Show RepoUpdateResult where
   show res = concat
-    [ "\nResults for " <> updateResultRepo res
+    [ "\n" <> updateResultRepo res
     , maybe " " ((\r -> ":(" ++ r ++ ") ") . C8.unpack) (updateResultBranch res)
     , either show show (updateErrorOrSuccess res)
     , "\n"
