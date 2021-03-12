@@ -170,7 +170,3 @@ instance Show RepoUpdateResult where
     , "\n"
     ]
 
-instance NFData RepoUpdateResult
-instance NFData GitOpResultType
-instance NFData GitOpResult
-instance NFData GitOpError
