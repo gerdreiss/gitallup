@@ -29,8 +29,6 @@ dependencies:
   - extra
   - split
   - pretty-simple
-  - abstract-par
-  - monad-par
 
 ghc-options:
   - -Wall
