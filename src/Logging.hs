@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 module Logging
   ( logInput
   , logRepo

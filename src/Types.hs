@@ -1,7 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric     #-}
-
 module Types where
 
 import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function

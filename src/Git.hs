@@ -1,6 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module Git
   ( listBranches
   , currentBranch

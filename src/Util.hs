@@ -1,5 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-
 module Util
   ( spanM
   , uniqueBy
