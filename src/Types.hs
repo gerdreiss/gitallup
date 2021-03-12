@@ -27,7 +27,7 @@ data GitOpResult =
   GitOpResult
     { resultType :: !GitOpResultType
     , resultText :: !B.ByteString
-    }
+    } deriving (Eq)
 
 data GitOpError =
   GitOpError

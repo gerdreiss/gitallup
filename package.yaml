@@ -29,6 +29,7 @@ dependencies:
   - extra
   - split
   - pretty-simple
+  - parallel
 
 ghc-options:
   - -Wall

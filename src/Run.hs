@@ -6,6 +6,7 @@ module Run
   )
 where
 
+import qualified Control.Parallel.Strategies   as Par
 import qualified Data.ByteString.Lazy.Char8    as C8
 import qualified Git
 import qualified Logging                       as Log
@@ -25,7 +26,7 @@ import           System.Directory               ( doesDirectoryExist
 import           System.FilePath                ( (</>) )
 import           Text.Pretty.Simple             ( pPrint )
 import           Types
-import           Util                           ( toSet )
+import           Util                           ( uniqueBy )
 
 run :: RIO App ()
 run = do
@@ -181,13 +182,12 @@ printSummary userHome results = do
       fmap (\r -> r { updateResultRepo = dropUserHome . updateResultRepo $ r })
         . filter (not . isGeneralSuccess)
         $ results
-  let (errors, successes) =
-        partition (isLeft . updateErrorOrSuccess) newResults
-  let upToDate = filter isUpToDate successes
-  let updated  = filter isUpdated successes
+    (errors, successes) = partition (isLeft . updateErrorOrSuccess) newResults
+    upToDate            = filter isUpToDate successes
+    updated             = filter isUpdated successes
 
   Log.logMsg "\n\n============================================================"
-  Log.logMsg $ "Repos processed  : " ++ show (length $ rmdups newResults)
+  Log.logMsg $ "Repos processed  : " ++ show (length . rmdups $ newResults)
   Log.logMsg $ "Errors occurred  : " ++ show (length errors)
   Log.logMsg $ "Repos up to date : " ++ show (length . rmdups $ upToDate)
   Log.logMsg $ "Repos updated    : " ++ show (length . rmdups $ updated)
@@ -207,4 +207,4 @@ printSummary userHome results = do
   isUpdated res = either (const False)
                          ((`elem` [Updated, Reset]) . resultType)
                          (updateErrorOrSuccess res)
-  rmdups = toSet updateResultRepo
+  rmdups = uniqueBy updateResultRepo

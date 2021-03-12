@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d154f85b2ed1aa800fc37708fc21f219396e454271a3fde5234d141aefe779bc
+-- hash: 45784cb6b82ed70cd5b0f28cfffea2883b1796a067813b81f8d02a073383860c
 
 name:           gitallup
 version:        0.3.0.0
@@ -44,6 +44,7 @@ library
     , extra
     , filepath
     , optparse-applicative
+    , parallel
     , pretty-simple
     , rio >=0.1.12.0
     , split
@@ -65,6 +66,7 @@ executable gitallup-exe
     , gitallup
     , optparse-applicative
     , optparse-simple
+    , parallel
     , pretty-simple
     , rio >=0.1.12.0
     , split

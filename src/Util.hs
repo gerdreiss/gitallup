@@ -2,7 +2,7 @@
 
 module Util
   ( spanM
-  , toSet
+  , uniqueBy
   )
 where
 
@@ -21,5 +21,5 @@ spanM predicateM (x : xs) = ifM (predicateM x) caseTrue caseFalse
     return (x : with, without)
   caseFalse = return ([], x : xs)
 
-toSet :: Ord b => (a -> b) -> [a] -> [a]
-toSet f = map head . groupOn f . sortOn f
+uniqueBy :: Ord b => (a -> b) -> [a] -> [a]
+uniqueBy f = map head . groupOn f . sortOn f
