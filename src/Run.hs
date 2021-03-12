@@ -7,10 +7,15 @@ import qualified Data.ByteString.Lazy.Char8    as C8
 import qualified Git
 import qualified Logging                       as Log
 import qualified RIO.ByteString.Lazy           as B
+import qualified Util
 
-import           Control.Concurrent.ParallelIO  ( parallel )
+
 import           Control.Monad.Extra            ( ifM
                                                 , partitionM
+                                                )
+import           Control.Parallel.Strategies    ( using
+                                                , parList
+                                                , rpar
                                                 )
 import           Data.List.Split                ( splitOn )
 import           RIO                     hiding ( force )
@@ -22,7 +27,6 @@ import           System.Directory               ( doesDirectoryExist
 import           System.FilePath                ( (</>) )
 import           Text.Pretty.Simple             ( pPrint )
 import           Types
-import           Util                           ( uniqueBy )
 
 run :: RIO App ()
 run = do
@@ -56,12 +60,13 @@ listDirectories excluded path = ifM
 
 listNestedRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> IO [FilePath]
 listNestedRepos recursive depth excluded subdirs
-  | recursive && depth /= 0 && (not . null $ subdirs) = concat
-  <$> parallel (listRepos True (depth - 1) excluded <$> subdirs)
+  | recursive && depth /= 0 && (not . null $ subdirs) = concat <$> sequence
+    (map (listRepos True (depth - 1) excluded) subdirs `using` parList rpar)
   | otherwise = return []
 
 updateRepos :: Bool -> Bool -> [FilePath] -> RIO App [RepoUpdateResult]
-updateRepos main force = (concat <$>) <$> mapM (updateRepo main force)
+updateRepos main force repos =
+  concat <$> sequence (map (updateRepo main force) repos `using` parList rpar)
 
 updateRepo :: Bool -> Bool -> FilePath -> RIO App [RepoUpdateResult]
 updateRepo main force repo = Log.logRepo repo >> do
@@ -199,4 +204,4 @@ printSummary userHome results = do
   isUpdated res = either (const False)
                          ((`elem` [Updated, Reset]) . resultType)
                          (updateErrorOrSuccess res)
-  rmdups = uniqueBy updateResultRepo
+  rmdups = Util.removeDuplicatesComparingBy updateResultRepo

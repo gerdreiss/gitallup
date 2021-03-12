@@ -1,6 +1,6 @@
 module Util
   ( spanM
-  , uniqueBy
+  , removeDuplicatesComparingBy
   )
 where
 
@@ -19,5 +19,5 @@ spanM predicateM (x : xs) = ifM (predicateM x) caseTrue caseFalse
     return (x : with, without)
   caseFalse = return ([], x : xs)
 
-uniqueBy :: Ord b => (a -> b) -> [a] -> [a]
-uniqueBy f = map head . groupOn f . sortOn f
+removeDuplicatesComparingBy :: Ord b => (a -> b) -> [a] -> [a]
+removeDuplicatesComparingBy f = map head . groupOn f . sortOn f

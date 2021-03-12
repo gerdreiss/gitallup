@@ -27,7 +27,7 @@ dependencies:
   - extra
   - filepath
   - optparse-applicative
-  - parallel-io
+  - parallel
   - pretty-simple
   - split
 
