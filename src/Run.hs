@@ -8,6 +8,7 @@ import qualified Git
 import qualified Logging                       as Log
 import qualified RIO.ByteString.Lazy           as B
 
+import           Control.Concurrent.ParallelIO  ( parallel )
 import           Control.Monad.Extra            ( ifM
                                                 , partitionM
                                                 )
@@ -33,22 +34,19 @@ run = do
   exclude   <- view excludeL
   userHome  <- view userHomeL
   Log.logInput recursive depth main force exclude root
-  listRepos recursive depth (splitOn "," exclude) root
+  liftIO (listRepos recursive depth (splitOn "," exclude) root)
     >>= updateRepos main force
     >>= printSummary userHome
 
-listRepos :: Bool -> Int -> [FilePath] -> FilePath -> RIO App [FilePath]
+listRepos :: Bool -> Int -> [FilePath] -> FilePath -> IO [FilePath]
 listRepos recursive depth excluded root = do
   (repos, rest) <- listReposAndRest excluded root
   nested        <- listNestedRepos recursive depth excluded rest
   return (repos ++ nested)
 
-listReposAndRest :: [FilePath] -> FilePath -> RIO App ([FilePath], [FilePath])
+listReposAndRest :: [FilePath] -> FilePath -> IO ([FilePath], [FilePath])
 listReposAndRest excluded root =
-  liftIO
-    $   makeAbsolute root
-    >>= listDirectories excluded
-    >>= partitionM Git.isGitRepo
+  makeAbsolute root >>= listDirectories excluded >>= partitionM Git.isGitRepo
 
 listDirectories :: [FilePath] -> FilePath -> IO [FilePath]
 listDirectories excluded path = ifM
@@ -56,12 +54,11 @@ listDirectories excluded path = ifM
   (fmap (path </>) . filter (`notElem` excluded) <$> listDirectory path)
   (return [])
 
-listNestedRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> RIO App [FilePath]
+listNestedRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> IO [FilePath]
 listNestedRepos recursive depth excluded subdirs
-  | recursive && depth /= 0 && (not . null $ subdirs)
-  = concat <$> mapM (listRepos True (depth - 1) excluded) subdirs
-  | otherwise
-  = return []
+  | recursive && depth /= 0 && (not . null $ subdirs) = concat
+  <$> parallel (listRepos True (depth - 1) excluded <$> subdirs)
+  | otherwise = return []
 
 updateRepos :: Bool -> Bool -> [FilePath] -> RIO App [RepoUpdateResult]
 updateRepos main force = (concat <$>) <$> mapM (updateRepo main force)
