@@ -1,5 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric     #-}
 
 module Types where
 
@@ -8,6 +9,7 @@ import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
 import           RIO.Process
+
 
 --
 --
@@ -21,26 +23,26 @@ data GitOpResultType
   | Updated
   | Reset
   | GeneralSuccess
-  deriving (Eq)
+  deriving (Eq, Generic)
 
 data GitOpResult =
   GitOpResult
     { resultType :: !GitOpResultType
     , resultText :: !B.ByteString
-    } deriving (Eq)
+    } deriving (Eq, Generic)
 
 data GitOpError =
   GitOpError
     { errorCode    :: !Int
     , errorMessage :: !B.ByteString
-    } deriving (Eq)
+    } deriving (Eq, Generic)
 
 data RepoUpdateResult =
   RepoUpdateResult
     { updateResultRepo     :: !FilePath
     , updateResultBranch   :: !(Maybe B.ByteString)
     , updateErrorOrSuccess :: !(Either GitOpError GitOpResult)
-    }
+    } deriving (Eq, Generic)
 
 data Options =
   Options
@@ -171,3 +173,8 @@ instance Show RepoUpdateResult where
     , either show show (updateErrorOrSuccess res)
     , "\n"
     ]
+
+instance NFData RepoUpdateResult
+instance NFData GitOpResultType
+instance NFData GitOpResult
+instance NFData GitOpError

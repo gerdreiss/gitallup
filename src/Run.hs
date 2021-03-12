@@ -12,10 +12,8 @@ import qualified Logging                       as Log
 import qualified RIO.ByteString.Lazy           as B
 
 import           Control.Monad.Extra            ( ifM
-                                                , concatMapM
                                                 , partitionM
                                                 )
-import           Control.Parallel.Strategies
 import           Data.List.Split                ( splitOn )
 import           RIO                     hiding ( force )
 import           RIO.List                       ( partition )
@@ -64,13 +62,12 @@ listDirectories excluded path = ifM
 listNestedRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> RIO App [FilePath]
 listNestedRepos recursive depth excluded subdirs
   | recursive && depth /= 0 && (not . null $ subdirs)
-  -- TODO execute in parallel
   = concat <$> mapM (listRepos True (depth - 1) excluded) subdirs
   | otherwise
   = return []
 
 updateRepos :: Bool -> Bool -> [FilePath] -> RIO App [RepoUpdateResult]
-updateRepos main force = concatMapM (updateRepo main force) -- TODO execute in parallel
+updateRepos main force = (concat <$>) <$> mapM (updateRepo main force)
 
 updateRepo :: Bool -> Bool -> FilePath -> RIO App [RepoUpdateResult]
 updateRepo main force repo = Log.logRepo repo >> do
