@@ -19,7 +19,7 @@ main = do
     simpleOptions
       $(simpleVersion Paths_gitallup.version)
       "Update all GIT repos in directory"
-      "Walks through all subdirectories of the given or current directory, and performs git pull on all GIT repos"
+      "Walks through all subdirectories of the given or current directory, and checks the status or performs git pull on all GIT repos"
       options
       empty
   lo <- setLogUseColor True <$> logOptionsHandle stderr (optionsVerbose opts)
@@ -35,6 +35,7 @@ options =
     <$> directory
     <*> recursive
     <*> recursiveDepth
+    <*> status
     <*> mainBranch
     <*> force
     <*> exclude
@@ -71,12 +72,20 @@ recursiveDepth =
           <> help "The depth of directory recursion"
       )
 
+status :: Parser Bool
+status =
+  switch
+    ( long "status"
+        <> short 'S'
+        <> help "Check status of the repositories."
+    )
+
 mainBranch :: Parser Bool
 mainBranch =
   switch
     ( long "main-branch"
         <> short 'm'
-        <> help "Switch all to main resp. master branch?"
+        <> help "Switch all to main/default branch? Ignored when --status/-S is passed as parameter."
     )
 
 force :: Parser Bool
@@ -84,7 +93,7 @@ force =
   switch
     ( long "force"
         <> short 'f'
-        <> help "Force update overriding any local changes?"
+        <> help "Force update overriding any local changes? Ignored when --status/-S is passed as parameter."
     )
 
 exclude :: Parser FilePath

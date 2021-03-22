@@ -1,6 +1,6 @@
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8    -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -21,43 +21,42 @@ data GitOpResultType
   | GeneralSuccess
   deriving (Eq, Generic)
 
-data GitOpResult =
-  GitOpResult
-    { resultType :: !GitOpResultType
-    , resultText :: !B.ByteString
-    } deriving (Eq, Generic)
+data GitOpResult = GitOpResult
+  { resultType :: !GitOpResultType
+  , resultText :: !B.ByteString
+  }
+  deriving (Eq, Generic)
 
-data GitOpError =
-  GitOpError
-    { errorCode    :: !Int
-    , errorMessage :: !B.ByteString
-    } deriving (Eq, Generic)
+data GitOpError = GitOpError
+  { errorCode    :: !Int
+  , errorMessage :: !B.ByteString
+  }
+  deriving (Eq, Generic)
 
-data RepoUpdateResult =
-  RepoUpdateResult
-    { updateResultRepo     :: !FilePath
-    , updateResultBranch   :: !(Maybe B.ByteString)
-    , updateErrorOrSuccess :: !(Either GitOpError GitOpResult)
-    } deriving (Eq, Generic)
+data RepoUpdateResult = RepoUpdateResult
+  { updateResultRepo     :: !FilePath
+  , updateResultBranch   :: !(Maybe B.ByteString)
+  , updateErrorOrSuccess :: !(Either GitOpError GitOpResult)
+  }
+  deriving (Eq, Generic)
 
-data Options =
-  Options
-    { optionsDirectory      :: !FilePath
-    , optionsRecursive      :: !Bool
-    , optionsRecursiveDepth :: !Int
-    , optionsMain           :: !Bool
-    , optionsForce          :: !Bool
-    , optionsExclude        :: !FilePath
-    , optionsVerbose        :: !Bool
-    }
+data Options = Options
+  { optionsDirectory      :: !FilePath
+  , optionsRecursive      :: !Bool
+  , optionsRecursiveDepth :: !Int
+  , optionsStatus         :: !Bool
+  , optionsMain           :: !Bool
+  , optionsForce          :: !Bool
+  , optionsExclude        :: !FilePath
+  , optionsVerbose        :: !Bool
+  }
 
-data App =
-  App
-    { appLogFunc        :: !LogFunc
-    , appProcessContext :: !ProcessContext
-    , appOptions        :: !Options
-    , appUserHome       :: !FilePath
-    }
+data App = App
+  { appLogFunc        :: !LogFunc
+  , appProcessContext :: !ProcessContext
+  , appOptions        :: !Options
+  , appUserHome       :: !FilePath
+  }
 
 --
 --
@@ -72,6 +71,9 @@ class HasRecursive env where
 
 class HasRecursiveDepth env where
   recursiveDepthL :: Lens' env Int
+
+class HasStatus env where
+  statusL :: Lens' env Bool
 
 class HasMain env where
   mainL :: Lens' env Bool
@@ -89,6 +91,10 @@ class HasUserHome env where
 -- 
 -- Instances
 --
+instance NFData RepoUpdateResult
+instance NFData GitOpResultType
+instance NFData GitOpResult
+instance NFData GitOpError
 
 instance HasDirectory App where
   directoryL = appOptionsL . optionsDirectoryL
@@ -110,6 +116,12 @@ instance HasRecursiveDepth App where
     appOptionsL = lens appOptions (\x y -> x { appOptions = y })
     optionsRecursiveDepthL =
       lens optionsRecursiveDepth (\x y -> x { optionsRecursiveDepth = y })
+
+instance HasStatus App where
+  statusL = appOptionsL . optionsStatusL
+   where
+    appOptionsL    = lens appOptions (\x y -> x { appOptions = y })
+    optionsStatusL = lens optionsStatus (\x y -> x { optionsStatus = y })
 
 instance HasMain App where
   mainL = appOptionsL . optionsMainL
@@ -169,4 +181,3 @@ instance Show RepoUpdateResult where
     , either show show (updateErrorOrSuccess res)
     , "\n"
     ]
-

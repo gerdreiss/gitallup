@@ -6,22 +6,22 @@ module Logging
   , logErr
   , debug
   , error
-  )
-where
+  ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8   -- TODO replace this with RIO's package or function
 
-import           RIO                     hiding ( force
-                                                , error
+import           RIO                     hiding ( error
+                                                , force
                                                 )
 import           Types
 
-logInput :: Bool -> Int -> Bool -> Bool -> FilePath -> FilePath -> RIO App ()
-logInput recursive depth main force exclude path =
+logInput
+  :: Bool -> Int -> Bool -> Bool -> Bool -> FilePath -> FilePath -> RIO App ()
+logInput recursive depth status main force exclude path =
   logInfo
     . fromString
     . concat
-    $ [ mkStrUpdate
+    $ [ if status then mkStrStatus else mkStrUpdate
       , mkStrRecursive
       , mkStrMain
       , "GIT repos in "
@@ -29,6 +29,7 @@ logInput recursive depth main force exclude path =
       , mkStrExclude
       ]
  where
+  mkStrStatus    = "Checking repo status "
   mkStrUpdate    = if force then "Force updating " else "Updating "
   mkStrRecursive = if recursive then "recursively " ++ mkStrDepth else " "
   mkStrDepth     = if depth > -1 then "up to a depth of " ++ show depth else " "

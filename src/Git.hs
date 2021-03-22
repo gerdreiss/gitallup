@@ -5,15 +5,16 @@ module Git
   , switchBranch
   , resetHard
   , updateBranch
+  , branchStatus
   , isDirty
   , isGitRepo
   , isMainBranch
-  )
-where
+  ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8                  -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
+import           Control.Monad.Extra            ( ifM )
 import           RIO
 import           RIO.Directory                  ( doesDirectoryExist )
 import           RIO.FilePath                   ( (</>) )
@@ -38,6 +39,12 @@ listBranches repo =
 currentBranch :: FilePath -> RIO App (Either GitOpError (Maybe B.ByteString))
 currentBranch repo =
   _extractCurrentBranch <$> proc "git" ["-C", repo, "branch"] readProcess
+
+--
+--
+branchStatus :: FilePath -> RIO App (Either GitOpError (Maybe B.ByteString))
+branchStatus repo =
+  _extractBranchStatus <$> proc "git" ["-C", repo, "status"] readProcess
 
 --
 --
@@ -75,7 +82,8 @@ updateBranch repo =
 
 --
 --
-resetHard :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpResult)
+resetHard
+  :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpResult)
 resetHard repo branch =
   _extractGitOpErrorOrResult
     <$> proc "git"
@@ -122,6 +130,15 @@ _extractMainBranch (ExitFailure code, _, err) = Left $ GitOpError code err
 
 --
 --
+_extractBranchStatus
+  :: ReadProcessResult -> Either GitOpError (Maybe B.ByteString)
+_extractBranchStatus result = ifM (_extractBranchIsDirty result)
+                                  (extractStatus result)
+                                  (return Nothing)
+  where extractStatus (_, status, _) = return (Just status)
+
+--
+--
 _extractBranchIsDirty :: ReadProcessResult -> Either GitOpError Bool
 _extractBranchIsDirty (ExitSuccess, out, _) =
   Right . not $ B.isSuffixOf "working tree clean" out
@@ -129,7 +146,8 @@ _extractBranchIsDirty (ExitFailure code, _, err) = Left (GitOpError code err)
 
 --
 --
-_extractGitOpErrorOrResult :: ReadProcessResult -> Either GitOpError GitOpResult
+_extractGitOpErrorOrResult
+  :: ReadProcessResult -> Either GitOpError GitOpResult
 _extractGitOpErrorOrResult (ExitSuccess, out, _) =
   Right $ GitOpResult (_extractGitOpResultType out) out
 _extractGitOpErrorOrResult (ExitFailure code, _, err) =

@@ -1,7 +1,6 @@
 module Run
   ( run
-  )
-where
+  ) where
 
 import qualified Data.ByteString.Lazy.Char8    as C8
 import qualified Git
@@ -13,9 +12,9 @@ import qualified Util
 import           Control.Monad.Extra            ( ifM
                                                 , partitionM
                                                 )
-import           Control.Parallel.Strategies    ( using
-                                                , parList
+import           Control.Parallel.Strategies    ( parList
                                                 , rpar
+                                                , using
                                                 )
 import           Data.List.Split                ( splitOn )
 import           RIO                     hiding ( force )
@@ -33,13 +32,14 @@ run = do
   root      <- view directoryL
   recursive <- view recursiveL
   depth     <- view recursiveDepthL
+  status    <- view statusL
   main      <- view mainL
   force     <- view forceL
   exclude   <- view excludeL
   userHome  <- view userHomeL
-  Log.logInput recursive depth main force exclude root
+  Log.logInput recursive depth status main force exclude root
   liftIO (listRepos recursive depth (splitOn "," exclude) root)
-    >>= updateRepos main force
+    >>= checkStatusOrUpdateRepos status main force
     >>= printSummary userHome
 
 listRepos :: Bool -> Int -> [FilePath] -> FilePath -> IO [FilePath]
@@ -63,6 +63,12 @@ listNestedRepos recursive depth excluded subdirs
   | recursive && depth /= 0 && (not . null $ subdirs) = concat <$> sequence
     (map (listRepos True (depth - 1) excluded) subdirs `using` parList rpar)
   | otherwise = return []
+
+checkStatusOrUpdateRepos
+  :: Bool -> Bool -> Bool -> [FilePath] -> RIO App [RepoUpdateResult]
+checkStatusOrUpdateRepos status main force repos = if status
+  then undefined -- TODO
+  else updateRepos main force repos
 
 updateRepos :: Bool -> Bool -> [FilePath] -> RIO App [RepoUpdateResult]
 updateRepos main force repos =
