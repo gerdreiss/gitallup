@@ -11,15 +11,13 @@ module Git
   , isMainBranch
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8          -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8                    -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
 import           RIO.Directory                  ( doesDirectoryExist )
 import           RIO.FilePath                   ( (</>) )
-import           RIO.List                       ( find
-                                                , isInfixOf
-                                                )
+import           RIO.List                       ( find )
 import           RIO.Process                    ( proc
                                                 , readProcess
                                                 )
@@ -148,18 +146,25 @@ _extractGitOpErrorOrResult (ExitFailure code, _, err) =
 --
 --
 _extractGitOpResultType :: B.ByteString -> GitOpResultType
-_extractGitOpResultType result | hasNoChanges result           = Clean
-                               | hasChanges (C8.unpack result) = Dirty
-                               | isUpdated result              = Updated
-                               | isReset result                = Reset
-                               | isUpToDate result             = UpToDate
-                               | otherwise                     = GeneralSuccess
+_extractGitOpResultType result | hasNoChanges result = Clean
+                               | hasChanges result   = Dirty
+                               | isUpdated result    = Updated
+                               | isReset result      = Reset
+                               | isUpToDate result   = UpToDate
+                               | otherwise           = GeneralSuccess
  where
   hasNoChanges = isJust . find (B.isPrefixOf "nothing to commit") . C8.lines
-  hasChanges r =
-    ("Your branch is ahead of" `isInfixOf` r)
-      || ("Changes not staged for commit" `isInfixOf` r)
-      || ("Changes to be committed" `isInfixOf` r)
+  hasChanges res =
+    isJust
+      . find
+          (\line ->
+            B.isPrefixOf "Your branch is ahead of" line
+              || B.isPrefixOf "Changes not staged for commit" line
+              || B.isPrefixOf "Changes to be committed" line
+              || B.isPrefixOf "Untracked files" line
+          )
+      . C8.lines
+      $ res
   isUpToDate = B.isPrefixOf "Already up to date"
   isUpdated  = B.isPrefixOf "Updating"
   isReset    = B.isPrefixOf "HEAD is now at"
