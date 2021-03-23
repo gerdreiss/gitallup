@@ -1,6 +1,6 @@
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8           -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8              -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -165,8 +165,8 @@ instance Show GitOpResult where
   show res = concat
     [ show (resultType res)
     , "\nResult text:\n"
-    , C8.unpack . C8.intercalate "\n" . take 10 . C8.lines . resultText $ res
-    , "\n..."
+    , C8.unpack . C8.intercalate "\n" . take 8 . C8.lines . resultText $ res
+    , "\n\n"
     ]
 
 instance Show GitOpError where
@@ -179,7 +179,7 @@ instance Show GitOpError where
 
 instance Show RepoUpdateResult where
   show res = concat
-    [ "\nRepo "
+    [ "\n================\nRepo "
     , updateResultRepo res
     , maybe " " ((\r -> ":(" ++ r ++ ") ") . C8.unpack) (updateResultBranch res)
     , either show show (updateErrorOrSuccess res)
