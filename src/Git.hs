@@ -11,7 +11,7 @@ module Git
   , isMainBranch
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8                    -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8       -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -146,13 +146,16 @@ _extractGitOpErrorOrResult (ExitFailure code, _, err) =
 --
 --
 _extractGitOpResultType :: B.ByteString -> GitOpResultType
-_extractGitOpResultType result | hasNoChanges result = Clean
-                               | hasChanges result   = Dirty
+_extractGitOpResultType result | isUpToDate result   = UpToDate
                                | isUpdated result    = Updated
                                | isReset result      = Reset
-                               | isUpToDate result   = UpToDate
+                               | hasNoChanges result = Clean
+                               | hasChanges result   = Dirty
                                | otherwise           = GeneralSuccess
  where
+  isUpToDate   = B.isPrefixOf "Already up to date"
+  isUpdated    = B.isPrefixOf "Updating"
+  isReset      = B.isPrefixOf "HEAD is now at"
   hasNoChanges = isJust . find (B.isPrefixOf "nothing to commit") . C8.lines
   hasChanges res =
     isJust
@@ -165,6 +168,3 @@ _extractGitOpResultType result | hasNoChanges result = Clean
           )
       . C8.lines
       $ res
-  isUpToDate = B.isPrefixOf "Already up to date"
-  isUpdated  = B.isPrefixOf "Updating"
-  isReset    = B.isPrefixOf "HEAD is now at"

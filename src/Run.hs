@@ -143,9 +143,11 @@ checkBranchNotMainSwitchUpdate repo branch =
 
 retrieveMainBranchSwitchUpdate :: FilePath -> RIO App RepoUpdateResult
 retrieveMainBranchSwitchUpdate repo =
-  Log.debug "Retrieving main branch..." >> Git.mainBranch repo >>= either
-    (errorResult repo)
-    (maybe (noMainBranchErrorResult repo) (switchBranchUpdate repo))
+  Log.debug "Retrieving the main/master branch..."
+    >>  Git.mainBranch repo
+    >>= either
+          (errorResult repo)
+          (maybe (noMainBranchErrorResult repo) (switchBranchUpdate repo))
 
 switchBranchUpdate :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
 switchBranchUpdate repo branch =
