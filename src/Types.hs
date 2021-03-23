@@ -1,10 +1,12 @@
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8              -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
-import           RIO.Process
+import           RIO.Process                    ( HasProcessContext(..)
+                                                , ProcessContext
+                                                )
 
 
 --
