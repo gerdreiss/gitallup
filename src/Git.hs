@@ -11,14 +11,15 @@ module Git
   , isMainBranch
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8                  -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8         -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
-import           Control.Monad.Extra            ( ifM )
 import           RIO
 import           RIO.Directory                  ( doesDirectoryExist )
 import           RIO.FilePath                   ( (</>) )
-import           RIO.List                       ( find )
+import           RIO.List                       ( find
+                                                , isInfixOf
+                                                )
 import           RIO.Process                    ( proc
                                                 , readProcess
                                                 )
@@ -42,12 +43,6 @@ currentBranch repo =
 
 --
 --
-branchStatus :: FilePath -> RIO App (Either GitOpError (Maybe B.ByteString))
-branchStatus repo =
-  _extractBranchStatus <$> proc "git" ["-C", repo, "status"] readProcess
-
---
---
 mainBranch :: FilePath -> RIO App (Either GitOpError (Maybe B.ByteString))
 mainBranch repo =
   _extractMainBranch <$> proc "git" ["-C", repo, "branch", "--all"] readProcess
@@ -65,6 +60,12 @@ isDirty repo =
 
 --
 -- actions
+--
+branchStatus :: FilePath -> RIO App (Either GitOpError GitOpResult)
+branchStatus repo =
+  _extractGitOpErrorOrResult <$> proc "git" ["-C", repo, "status"] readProcess
+
+--
 --
 switchBranch
   :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpResult)
@@ -130,18 +131,9 @@ _extractMainBranch (ExitFailure code, _, err) = Left $ GitOpError code err
 
 --
 --
-_extractBranchStatus
-  :: ReadProcessResult -> Either GitOpError (Maybe B.ByteString)
-_extractBranchStatus result = ifM (_extractBranchIsDirty result)
-                                  (extractStatus result)
-                                  (return Nothing)
-  where extractStatus (_, status, _) = return (Just status)
-
---
---
 _extractBranchIsDirty :: ReadProcessResult -> Either GitOpError Bool
 _extractBranchIsDirty (ExitSuccess, out, _) =
-  Right . not $ B.isSuffixOf "working tree clean" out
+  Right . isNothing . find (B.isPrefixOf "nothing to commit") . C8.lines $ out
 _extractBranchIsDirty (ExitFailure code, _, err) = Left (GitOpError code err)
 
 --
@@ -156,11 +148,23 @@ _extractGitOpErrorOrResult (ExitFailure code, _, err) =
 --
 --
 _extractGitOpResultType :: B.ByteString -> GitOpResultType
-_extractGitOpResultType result | isUpdated result  = Updated
-                               | isReset result    = Reset
-                               | isUpToDate result = UpToDate
-                               | otherwise         = GeneralSuccess
+_extractGitOpResultType result | hasNoChanges result           = Clean
+                               | hasChanges (C8.unpack result) = Dirty
+                               | isUpdated result              = Updated
+                               | isReset result                = Reset
+                               | isUpToDate result             = UpToDate
+                               | otherwise                     = GeneralSuccess
  where
+  hasNoChanges = isJust . find (B.isPrefixOf "nothing to commit") . C8.lines
+  hasChanges r =
+    ("Your branch is ahead of" `isInfixOf` r)
+      || ("Changes not staged for commit" `isInfixOf` r)
+      || ("Changes to be committed" `isInfixOf` r)
   isUpToDate = B.isPrefixOf "Already up to date"
   isUpdated  = B.isPrefixOf "Updating"
   isReset    = B.isPrefixOf "HEAD is now at"
+
+-- 
+--
+_generalSuccess :: B.ByteString -> Either GitOpError GitOpResult
+_generalSuccess text = Right $ GitOpResult GeneralSuccess text

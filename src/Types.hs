@@ -1,6 +1,6 @@
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8    -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8           -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -15,7 +15,9 @@ import           RIO.Process
 type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
 
 data GitOpResultType
-  = UpToDate
+  = Clean
+  | Dirty
+  | UpToDate
   | Updated
   | Reset
   | GeneralSuccess
@@ -152,6 +154,8 @@ instance HasUserHome App where
   userHomeL = lens appUserHome (\x y -> x { appUserHome = y })
 
 instance Show GitOpResultType where
+  show Clean          = " has nothing to commit."
+  show Dirty          = " has uncommitted changes."
   show Updated        = " updated successfully."
   show Reset          = " reset succesfully."
   show UpToDate       = " already up to date."
@@ -179,5 +183,5 @@ instance Show RepoUpdateResult where
     , updateResultRepo res
     , maybe " " ((\r -> ":(" ++ r ++ ") ") . C8.unpack) (updateResultBranch res)
     , either show show (updateErrorOrSuccess res)
-    , "\n"
+    , "\n\n"
     ]

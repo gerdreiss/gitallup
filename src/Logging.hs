@@ -8,7 +8,7 @@ module Logging
   , error
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8   -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8    -- TODO replace this with RIO's package or function
 
 import           RIO                     hiding ( error
                                                 , force
@@ -36,8 +36,12 @@ logInput recursive depth status main force exclude path =
   mkStrMain      = if main then "main branches of the " else " "
   mkStrExclude   = if null exclude then " " else "excluding " ++ exclude
 
-logRepo :: FilePath -> RIO App ()
-logRepo repo = logInfo . fromString $ "updating repo: " ++ repo
+logRepo :: Bool -> FilePath -> RIO App ()
+logRepo status repo =
+  logInfo
+    .  fromString
+    $  (if status then "checking status for repo: " else "updating repo: ")
+    ++ repo
 
 logMsg :: String -> RIO App ()
 logMsg = logInfo . fromString

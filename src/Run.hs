@@ -6,7 +6,6 @@ import qualified Data.ByteString.Lazy.Char8    as C8
 import qualified Git
 import qualified Logging                       as Log
 import qualified RIO.ByteString.Lazy           as B
-import qualified Util
 
 
 import           Control.Monad.Extra            ( ifM
@@ -40,7 +39,7 @@ run = do
   Log.logInput recursive depth status main force exclude root
   liftIO (listRepos recursive depth (splitOn "," exclude) root)
     >>= checkStatusOrUpdateRepos status main force
-    >>= printSummary userHome
+    >>= printSummary userHome status
 
 listRepos :: Bool -> Int -> [FilePath] -> FilePath -> IO [FilePath]
 listRepos recursive depth excluded root = do
@@ -66,16 +65,25 @@ listNestedRepos recursive depth excluded subdirs
 
 checkStatusOrUpdateRepos
   :: Bool -> Bool -> Bool -> [FilePath] -> RIO App [RepoUpdateResult]
-checkStatusOrUpdateRepos status main force repos = if status
-  then undefined -- TODO
-  else updateRepos main force repos
+checkStatusOrUpdateRepos status main force repos =
+  if status then checkStatusRepos repos else updateRepos main force repos
+
+checkStatusRepos :: [FilePath] -> RIO App [RepoUpdateResult]
+checkStatusRepos repos =
+  sequence (map checkStatusRepo repos `using` parList rpar)
+
+checkStatusRepo :: FilePath -> RIO App RepoUpdateResult
+checkStatusRepo repo =
+  Log.logRepo True repo
+    >>  RepoUpdateResult repo Nothing
+    <$> Git.branchStatus repo
 
 updateRepos :: Bool -> Bool -> [FilePath] -> RIO App [RepoUpdateResult]
 updateRepos main force repos =
   concat <$> sequence (map (updateRepo main force) repos `using` parList rpar)
 
 updateRepo :: Bool -> Bool -> FilePath -> RIO App [RepoUpdateResult]
-updateRepo main force repo = Log.logRepo repo >> do
+updateRepo main force repo = Log.logRepo False repo >> do
   forceResult <- if force
     then checkIsDirtyAndHardResetCurrentBranch repo
     else RepoUpdateResult repo Nothing <$> Git.updateBranch repo
@@ -178,36 +186,63 @@ noMainBranchError repo =
 --
 -- prints the update summary
 --
-printSummary :: FilePath -> [RepoUpdateResult] -> RIO App ()
-printSummary userHome results = do
+printSummary :: FilePath -> Bool -> [RepoUpdateResult] -> RIO App ()
+printSummary userHome status results = do
+  Log.logMsg "\n\n============================================================"
+
   let
     newResults =
       fmap (\r -> r { updateResultRepo = dropUserHome . updateResultRepo $ r })
         . filter (not . isGeneralSuccess)
         $ results
-    (errors, successes) = partition (isLeft . updateErrorOrSuccess) newResults
-    upToDate            = filter isUpToDate successes
-    updated             = filter isUpdated successes
+    errors = filter (isLeft . updateErrorOrSuccess) newResults
 
-  Log.logMsg "\n\n============================================================"
-  Log.logMsg $ "Repos processed  : " ++ show (length . rmdups $ newResults)
+  Log.logMsg $ "Repos processed  : " ++ show (length newResults)
   Log.logMsg $ "Errors occurred  : " ++ show (length errors)
-  Log.logMsg $ "Repos up to date : " ++ show (length . rmdups $ upToDate)
-  Log.logMsg $ "Repos updated    : " ++ show (length . rmdups $ updated)
-  Log.logMsg "\n"
 
-  mapM_ pPrint errors
-  mapM_ pPrint updated
+  if status
+    then printStatusSummary newResults
+    else printUpdateSummary newResults
 
  where
   dropUserHome = ("~" ++) . drop (length userHome)
   isGeneralSuccess res = either (const False)
                                 ((== GeneralSuccess) . resultType)
                                 (updateErrorOrSuccess res)
-  isUpToDate res = either (const False)
-                          ((== UpToDate) . resultType)
-                          (updateErrorOrSuccess res)
+
+
+printStatusSummary :: [RepoUpdateResult] -> RIO App ()
+printStatusSummary results = do
+  let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
+      dirty               = filter isDirty successes
+
+  Log.logMsg $ "Repos dirty      : " ++ show (length dirty)
+  Log.logMsg "\n"
+
+  mapM_ pPrint errors
+  mapM_ pPrint dirty
+
+ where
+  isDirty res =
+    either (const False) ((== Dirty) . resultType) (updateErrorOrSuccess res)
+
+printUpdateSummary :: [RepoUpdateResult] -> RIO App ()
+printUpdateSummary results = do
+  let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
+      upToDate            = filter isUpToDate successes
+      updated             = filter isUpdated successes
+
+  Log.logMsg $ "Repos up to date : " ++ show (length upToDate)
+  Log.logMsg $ "Repos updated    : " ++ show (length updated)
+  Log.logMsg "\n"
+
+  mapM_ pPrint errors
+  mapM_ pPrint updated
+
+ where
+  isUpToDate res =
+    either (const False) ((== UpToDate) . resultType) (updateErrorOrSuccess res)
   isUpdated res = either (const False)
                          ((`elem` [Updated, Reset]) . resultType)
                          (updateErrorOrSuccess res)
-  rmdups = Util.removeDuplicatesComparingBy updateResultRepo
+
