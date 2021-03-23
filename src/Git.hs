@@ -11,7 +11,7 @@ module Git
   , isMainBranch
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8         -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8          -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -163,8 +163,3 @@ _extractGitOpResultType result | hasNoChanges result           = Clean
   isUpToDate = B.isPrefixOf "Already up to date"
   isUpdated  = B.isPrefixOf "Updating"
   isReset    = B.isPrefixOf "HEAD is now at"
-
--- 
---
-_generalSuccess :: B.ByteString -> Either GitOpError GitOpResult
-_generalSuccess text = Right $ GitOpResult GeneralSuccess text
