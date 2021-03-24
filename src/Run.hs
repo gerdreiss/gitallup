@@ -67,13 +67,14 @@ listNestedRepos recursive depth excluded subdirs
 --
 -- Check git status of or update the repositories
 --
--- Check status
---
 checkStatusOrUpdateRepos :: [FilePath] -> RIO App [RepoUpdateResult]
 checkStatusOrUpdateRepos repos = do
   status <- view statusL
   if status then checkStatusRepos repos else updateRepos repos
 
+--
+-- Check status
+--
 checkStatusRepos :: [FilePath] -> RIO App [RepoUpdateResult]
 checkStatusRepos repos =
   sequence (map checkStatusRepo repos `using` parList rpar)
@@ -91,14 +92,16 @@ updateRepos repos =
 
 updateRepo :: FilePath -> RIO App [RepoUpdateResult]
 updateRepo repo = Log.logRepo repo >> do
-  main        <- view mainL
   force       <- view forceL
   forceResult <- if force
     then checkIsDirtyAndHardResetCurrentBranch repo
     else RepoUpdateResult repo Nothing <$> Git.updateBranch repo
+
+  main        <- view mainL
   mainResult  <- if main
     then checkCurrentBranchSwitchUpdate repo
     else generalSuccessResult repo Nothing "Done."
+
   return [forceResult, mainResult]
 
 checkIsDirtyAndHardResetCurrentBranch :: FilePath -> RIO App RepoUpdateResult
@@ -168,33 +171,41 @@ switchBranchUpdate repo branch =
         )
 
 --
--- functions to create different update results
+-- functions to create different update or status results
 --
+
 errorResult :: FilePath -> GitOpError -> RIO App RepoUpdateResult
 errorResult repo = return . RepoUpdateResult repo Nothing . Left
 
 generalSuccessResult
   :: FilePath -> Maybe B.ByteString -> B.ByteString -> RIO App RepoUpdateResult
 generalSuccessResult repo maybeBranch text = return $ RepoUpdateResult
-  repo
-  maybeBranch
-  (Right $ GitOpResult GeneralSuccess text)
+  { updateResultRepo     = repo
+  , updateResultBranch   = maybeBranch
+  , updateErrorOrSuccess = Right GitOpResult { resultType = GeneralSuccess
+                                             , resultText = text
+                                             }
+  }
 
 noCurrentBranchErrorResult :: FilePath -> RIO App RepoUpdateResult
-noCurrentBranchErrorResult repo =
-  return $ RepoUpdateResult repo Nothing (noCurrentBranchError repo)
-
-noCurrentBranchError :: FilePath -> Either GitOpError GitOpResult
-noCurrentBranchError repo = Left
-  $ GitOpError 0 (C8.pack $ "Repo" ++ repo ++ "has no current branch (WTF?)")
+noCurrentBranchErrorResult repo = return $ RepoUpdateResult
+  { updateResultRepo     = repo
+  , updateResultBranch   = Nothing
+  , updateErrorOrSuccess = Left GitOpError { errorCode    = -1
+                                           , errorMessage = message
+                                           }
+  }
+  where message = C8.pack $ "Repo" ++ repo ++ "has no current branch (WTF?)"
 
 noMainBranchErrorResult :: FilePath -> RIO App RepoUpdateResult
-noMainBranchErrorResult repo =
-  return $ RepoUpdateResult repo Nothing (noMainBranchError repo)
-
-noMainBranchError :: FilePath -> Either GitOpError GitOpResult
-noMainBranchError repo =
-  Left $ GitOpError 0 (C8.pack $ "Repo" ++ repo ++ "has no main branch (WTF?)")
+noMainBranchErrorResult repo = return $ RepoUpdateResult
+  { updateResultRepo     = repo
+  , updateResultBranch   = Nothing
+  , updateErrorOrSuccess = Left GitOpError { errorCode    = -1
+                                           , errorMessage = message
+                                           }
+  }
+  where message = C8.pack ("Repo" ++ repo ++ "has no main branch (WTF?)")
 
 --
 --
