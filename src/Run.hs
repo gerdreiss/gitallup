@@ -179,9 +179,9 @@ errorResult repo = return . RepoUpdateResult repo Nothing . Left
 
 generalSuccessResult
   :: FilePath -> Maybe B.ByteString -> B.ByteString -> RIO App RepoUpdateResult
-generalSuccessResult repo maybeBranch text = return $ RepoUpdateResult
+generalSuccessResult repo branch text = return $ RepoUpdateResult
   { updateResultRepo     = repo
-  , updateResultBranch   = maybeBranch
+  , updateResultBranch   = branch
   , updateErrorOrSuccess = Right GitOpResult { resultType = GeneralSuccess
                                              , resultText = text
                                              }
