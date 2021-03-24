@@ -5,7 +5,6 @@ module Main where
 import           Options.Applicative
 import           Options.Applicative.Simple
 import           RIO                     hiding ( force )
-import           RIO.Directory                  ( getHomeDirectory )
 import           RIO.Process                    ( mkDefaultProcessContext )
 import           Run                            ( run )
 import           Types
@@ -24,9 +23,8 @@ main = do
       empty
   lo <- setLogUseColor True <$> logOptionsHandle stderr (optionsVerbose opts)
   pc <- mkDefaultProcessContext
-  home <- getHomeDirectory
   withLogFunc lo $ \lf ->
-    let app = App { appLogFunc = lf, appProcessContext = pc, appOptions = opts, appUserHome = home }
+    let app = App { appLogFunc = lf, appProcessContext = pc, appOptions = opts }
      in runRIO app run
 
 options :: Parser Options

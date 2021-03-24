@@ -1,6 +1,6 @@
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8   -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -59,7 +59,6 @@ data App = App
   { appLogFunc        :: !LogFunc
   , appProcessContext :: !ProcessContext
   , appOptions        :: !Options
-  , appUserHome       :: !FilePath
   }
 
 --
@@ -151,9 +150,6 @@ instance HasLogFunc App where
 instance HasProcessContext App where
   processContextL =
     lens appProcessContext (\x y -> x { appProcessContext = y })
-
-instance HasUserHome App where
-  userHomeL = lens appUserHome (\x y -> x { appUserHome = y })
 
 instance Show GitOpResultType where
   show Clean          = " has nothing to commit."

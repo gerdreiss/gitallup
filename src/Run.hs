@@ -28,18 +28,14 @@ import           Types
 
 run :: RIO App ()
 run = do
-  root      <- view directoryL
+  Log.logInput
   recursive <- view recursiveL
   depth     <- view recursiveDepthL
-  status    <- view statusL
-  main      <- view mainL
-  force     <- view forceL
   exclude   <- view excludeL
-  userHome  <- view userHomeL
-  Log.logInput recursive depth status main force exclude root
+  root      <- view directoryL
   liftIO (listRepos recursive depth (splitOn "," exclude) root)
-    >>= checkStatusOrUpdateRepos status main force
-    >>= printSummary userHome status
+    >>= checkStatusOrUpdateRepos
+    >>= printSummary
 
 listRepos :: Bool -> Int -> [FilePath] -> FilePath -> IO [FilePath]
 listRepos recursive depth excluded root = do
@@ -63,10 +59,10 @@ listNestedRepos recursive depth excluded subdirs
     (map (listRepos True (depth - 1) excluded) subdirs `using` parList rpar)
   | otherwise = return []
 
-checkStatusOrUpdateRepos
-  :: Bool -> Bool -> Bool -> [FilePath] -> RIO App [RepoUpdateResult]
-checkStatusOrUpdateRepos status main force repos =
-  if status then checkStatusRepos repos else updateRepos main force repos
+checkStatusOrUpdateRepos :: [FilePath] -> RIO App [RepoUpdateResult]
+checkStatusOrUpdateRepos repos = do
+  status <- view statusL
+  if status then checkStatusRepos repos else updateRepos repos
 
 checkStatusRepos :: [FilePath] -> RIO App [RepoUpdateResult]
 checkStatusRepos repos =
@@ -74,16 +70,16 @@ checkStatusRepos repos =
 
 checkStatusRepo :: FilePath -> RIO App RepoUpdateResult
 checkStatusRepo repo =
-  Log.logRepo True repo
-    >>  RepoUpdateResult repo Nothing
-    <$> Git.branchStatus repo
+  Log.logRepo repo >> RepoUpdateResult repo Nothing <$> Git.branchStatus repo
 
-updateRepos :: Bool -> Bool -> [FilePath] -> RIO App [RepoUpdateResult]
-updateRepos main force repos =
-  concat <$> sequence (map (updateRepo main force) repos `using` parList rpar)
+updateRepos :: [FilePath] -> RIO App [RepoUpdateResult]
+updateRepos repos =
+  concat <$> sequence (map updateRepo repos `using` parList rpar)
 
-updateRepo :: Bool -> Bool -> FilePath -> RIO App [RepoUpdateResult]
-updateRepo main force repo = Log.logRepo False repo >> do
+updateRepo :: FilePath -> RIO App [RepoUpdateResult]
+updateRepo repo = Log.logRepo repo >> do
+  main        <- view mainL
+  force       <- view forceL
   forceResult <- if force
     then checkIsDirtyAndHardResetCurrentBranch repo
     else RepoUpdateResult repo Nothing <$> Git.updateBranch repo
@@ -188,16 +184,15 @@ noMainBranchError repo =
 --
 -- prints the update summary
 --
-printSummary :: FilePath -> Bool -> [RepoUpdateResult] -> RIO App ()
-printSummary userHome status results = do
+printSummary :: [RepoUpdateResult] -> RIO App ()
+printSummary results = do
+
+  status <- view statusL
+
   Log.logMsg "\n\n============================================================"
 
-  let
-    newResults =
-      fmap (\r -> r { updateResultRepo = dropUserHome . updateResultRepo $ r })
-        . filter (not . isGeneralSuccess)
-        $ results
-    errors = filter (isLeft . updateErrorOrSuccess) newResults
+  let newResults = filter (not . isGeneralSuccess) results
+      errors     = filter (isLeft . updateErrorOrSuccess) newResults
 
   Log.logMsg $ "Repos processed  : " ++ show (length newResults)
   Log.logMsg $ "Errors occurred  : " ++ show (length errors)
@@ -207,7 +202,6 @@ printSummary userHome status results = do
     else printUpdateSummary newResults
 
  where
-  dropUserHome = ("~" ++) . drop (length userHome)
   isGeneralSuccess res = either (const False)
                                 ((== GeneralSuccess) . resultType)
                                 (updateErrorOrSuccess res)
