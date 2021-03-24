@@ -26,6 +26,8 @@ import           System.FilePath                ( (</>) )
 import           Text.Pretty.Simple             ( pPrint )
 import           Types
 
+--
+--
 run :: RIO App ()
 run = do
   Log.logInput
@@ -37,6 +39,9 @@ run = do
     >>= checkStatusOrUpdateRepos
     >>= printSummary
 
+--
+-- Listing GIT repos recursively up to a given depth
+--
 listRepos :: Bool -> Int -> [FilePath] -> FilePath -> IO [FilePath]
 listRepos recursive depth excluded root = do
   (repos, rest) <- listReposAndRest excluded root
@@ -59,6 +64,11 @@ listNestedRepos recursive depth excluded subdirs
     (map (listRepos True (depth - 1) excluded) subdirs `using` parList rpar)
   | otherwise = return []
 
+--
+-- Check git status of or update the repositories
+--
+-- Check status
+--
 checkStatusOrUpdateRepos :: [FilePath] -> RIO App [RepoUpdateResult]
 checkStatusOrUpdateRepos repos = do
   status <- view statusL
@@ -72,6 +82,9 @@ checkStatusRepo :: FilePath -> RIO App RepoUpdateResult
 checkStatusRepo repo =
   Log.logRepo repo >> RepoUpdateResult repo Nothing <$> Git.branchStatus repo
 
+--
+-- Update
+--
 updateRepos :: [FilePath] -> RIO App [RepoUpdateResult]
 updateRepos repos =
   concat <$> sequence (map updateRepo repos `using` parList rpar)
@@ -154,6 +167,9 @@ switchBranchUpdate repo branch =
         >> Git.updateBranch repo
         )
 
+--
+-- functions to create different update results
+--
 errorResult :: FilePath -> GitOpError -> RIO App RepoUpdateResult
 errorResult repo = return . RepoUpdateResult repo Nothing . Left
 
@@ -182,7 +198,7 @@ noMainBranchError repo =
 
 --
 --
--- prints the update summary
+-- prints the status or update summary
 --
 printSummary :: [RepoUpdateResult] -> RIO App ()
 printSummary results = do
@@ -206,7 +222,8 @@ printSummary results = do
                                 ((== GeneralSuccess) . resultType)
                                 (updateErrorOrSuccess res)
 
-
+--
+--
 printStatusSummary :: [RepoUpdateResult] -> RIO App ()
 printStatusSummary results = do
   let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
@@ -222,6 +239,8 @@ printStatusSummary results = do
   isDirty res =
     either (const False) ((== Dirty) . resultType) (updateErrorOrSuccess res)
 
+--
+--
 printUpdateSummary :: [RepoUpdateResult] -> RIO App ()
 printUpdateSummary results = do
   let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
@@ -241,4 +260,3 @@ printUpdateSummary results = do
   isUpdated res = either (const False)
                          ((`elem` [Updated, Reset]) . resultType)
                          (updateErrorOrSuccess res)
-

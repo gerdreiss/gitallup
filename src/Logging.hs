@@ -8,13 +8,15 @@ module Logging
   , error
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8                 -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
 
 import           RIO                     hiding ( error
                                                 , force
                                                 )
 import           Types
 
+--
+--
 logInput :: RIO App ()
 logInput = do
   status    <- view statusL
@@ -57,6 +59,8 @@ logInput = do
   resolvePath "~"  = "home directory "
   resolvePath path = path ++ " "
 
+--
+--
 logRepo :: FilePath -> RIO App ()
 logRepo repo = do
   status <- view statusL
@@ -65,9 +69,8 @@ logRepo repo = do
     $  (if status then "checking status for repo: " else "updating repo: ")
     ++ repo
 
-logMsg :: String -> RIO App ()
-logMsg = logInfo . fromString
-
+--
+--
 logRes :: String -> GitOpResult -> RIO App ()
 logRes msg res =
   logInfo
@@ -75,6 +78,13 @@ logRes msg res =
     . concat
     $ ["Success => ", msg, " ", show (resultType res)]
 
+--
+--
+logMsg :: String -> RIO App ()
+logMsg = logInfo . fromString
+
+--
+--
 logErr :: GitOpError -> RIO App ()
 logErr err =
   logError
@@ -82,8 +92,12 @@ logErr err =
     . concat
     $ ["Failed => ", show (errorCode err), " - ", C8.unpack (errorMessage err)]
 
+--
+--
 debug :: String -> RIO App ()
 debug = logDebug . fromString
 
+--
+--
 error :: String -> RIO App ()
 error = logError . fromString
