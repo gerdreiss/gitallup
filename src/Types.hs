@@ -52,6 +52,7 @@ data Options = Options
   , optionsMain           :: !Bool
   , optionsForce          :: !Bool
   , optionsExclude        :: !FilePath
+  , optionsActions        :: !FilePath
   , optionsVerbose        :: !Bool
   }
 
@@ -86,6 +87,9 @@ class HasForce env where
 
 class HasExclude env where
   excludeL :: Lens' env FilePath
+
+class HasActions env where
+  actionsL :: Lens' env FilePath
 
 class HasUserHome env where
   userHomeL :: Lens' env FilePath
@@ -143,6 +147,12 @@ instance HasExclude App where
    where
     appOptionsL     = lens appOptions (\x y -> x { appOptions = y })
     optionsExcludeL = lens optionsExclude (\x y -> x { optionsExclude = y })
+
+instance HasActions App where
+  actionsL = appOptionsL . optionsActionsL
+   where
+    appOptionsL     = lens appOptions (\x y -> x { appOptions = y })
+    optionsActionsL = lens optionsActions (\x y -> x { optionsActions = y })
 
 instance HasLogFunc App where
   logFuncL = lens appLogFunc (\x y -> x { appLogFunc = y })

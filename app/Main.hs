@@ -37,7 +37,8 @@ options =
     <*> mainBranch
     <*> force
     <*> exclude
-    <*> verbose
+    <*> actions
+    <*> verbose   
 
 directory :: Parser FilePath 
 directory =
@@ -102,6 +103,15 @@ exclude =
         <> metavar "LIST"
         <> value ""
         <> help "List of directories/repositories to be excluded from updating, comma separated"
+    )
+
+actions :: Parser FilePath
+actions =
+  strOption
+    ( long "actions"
+        <> short 'a'
+        <> metavar "PATH"
+        <> help "Path to the file that contains actions for selected repositories"
     )
 
 verbose :: Parser Bool
