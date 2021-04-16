@@ -5,6 +5,7 @@ module Logging
   , logRes
   , logErr
   , debug
+  , warn
   , error
   ) where
 
@@ -101,3 +102,8 @@ debug = logDebug . fromString
 --
 error :: String -> RIO App ()
 error = logError . fromString
+
+--
+--
+warn :: String -> RIO App ()
+warn = logWarn . fromString

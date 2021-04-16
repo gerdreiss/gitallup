@@ -1,6 +1,6 @@
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8   -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8     -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -52,7 +52,7 @@ data Options = Options
   , optionsMain           :: !Bool
   , optionsForce          :: !Bool
   , optionsExclude        :: !FilePath
-  , optionsActions        :: !FilePath
+  , optionsActions        :: Maybe FilePath
   , optionsVerbose        :: !Bool
   }
 
@@ -89,7 +89,7 @@ class HasExclude env where
   excludeL :: Lens' env FilePath
 
 class HasActions env where
-  actionsL :: Lens' env FilePath
+  actionsL :: Lens' env (Maybe FilePath)
 
 class HasUserHome env where
   userHomeL :: Lens' env FilePath
