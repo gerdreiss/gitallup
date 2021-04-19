@@ -1,6 +1,6 @@
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8     -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8                 -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -22,6 +22,7 @@ data GitOpResultType
   | UpToDate
   | Updated
   | Reset
+  | ActionExd
   | GeneralSuccess
   deriving (Eq, Generic)
 
@@ -167,6 +168,7 @@ instance Show GitOpResultType where
   show Updated        = " updated successfully."
   show Reset          = " reset succesfully."
   show UpToDate       = " already up to date."
+  show ActionExd      = " executed."
   show GeneralSuccess = " operation successful, whatever it was ¯\\_(ツ)_/¯"
 
 instance Show GitOpResult where
@@ -193,3 +195,8 @@ instance Show RepoUpdateResult where
     , either show show (updateErrorOrSuccess res)
     , "\n\n"
     ]
+
+
+withResultType :: GitOpResultType -> RepoUpdateResult -> Bool
+withResultType resType result =
+  either (const False) ((== resType) . resultType) (updateErrorOrSuccess result)

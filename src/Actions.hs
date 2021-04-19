@@ -15,7 +15,8 @@ import           Control.Parallel.Strategies    ( parList
 import           Data.Configurator              ( load
                                                 , lookup
                                                 )
-import           RIO                     hiding ( force
+import           RIO                     hiding ( display
+                                                , force
                                                 , lookup
                                                 )
 import           RIO.Directory                  ( doesFileExist )
@@ -23,16 +24,16 @@ import           RIO.Directory                  ( doesFileExist )
 import           Data.Configurator.Types        ( Config
                                                 , Worth(Required)
                                                 )
+import           Data.List                      ( last )
 import           RIO.FilePath                   ( takeFileName )
-import           RIO.List.Partial               ( head
-                                                , tail
-                                                )
+import           RIO.List                       ( intercalate )
 import           RIO.Process                    ( proc
                                                 , readProcess
                                                 )
 import           Types
 
-
+--
+--
 checkAndExecuteActions :: [RepoUpdateResult] -> RIO App [RepoUpdateResult]
 checkAndExecuteActions results =
     view actionsL >>= maybe (return results) executeOrReturn
@@ -41,31 +42,82 @@ checkAndExecuteActions results =
                                   (executeActions results actions)
                                   (warnNotFound results actions)
 
+--
+--
 executeActions :: [RepoUpdateResult] -> FilePath -> RIO App [RepoUpdateResult]
-executeActions results actions = do
-    config <- liftIO $ load [Required actions]
-    acts   <- liftIO $ getActions config results
-    sequence (map (uncurry executeAction) acts `using` parList rpar)
+executeActions results actionFile = do
+    config  <- liftIO $ load [Required actionFile]
+    actions <- liftIO $ getActions results config
+    sequence (map (uncurry executeActionIfDefined) actions `using` parList rpar)
 
-executeAction :: FilePath -> Text -> RIO App RepoUpdateResult
-executeAction repo action = do
-    let command =
-            fmap T.unpack . T.words $ if "[[REPO-PATH]]" `T.isInfixOf` action
-                then TP.replace "[[REPO-PATH]]" (T.pack repo) action
-                else action
-    processActionResult repo <$> proc (head command) (tail command) readProcess
+--
+--
+getActions :: [RepoUpdateResult] -> Config -> IO [(RepoUpdateResult, Text)]
+getActions results config = mapM (getAction config) results
 
-getActions :: Config -> [RepoUpdateResult] -> IO [(FilePath, Text)]
-getActions config = mapM (getAction config . updateResultRepo)
+--
+--
+getAction :: Config -> RepoUpdateResult -> IO (RepoUpdateResult, Text)
+getAction config result
+    | withResultType Updated result = fmap
+        (maybe (result, T.empty) (result, ))
+        (lookup config . T.pack . takeFileName . updateResultRepo $ result)
+    | otherwise = return (result, T.empty)
 
-getAction :: Config -> FilePath -> IO (FilePath, Text)
-getAction config repo = fmap (maybe (repo, T.empty) (repo, ))
-                             (lookup config . T.pack . takeFileName $ repo)
+--
+--
+executeActionIfDefined :: RepoUpdateResult -> Text -> RIO App RepoUpdateResult
+executeActionIfDefined result action | T.null action = return result
+                                     | otherwise = executeAction result action
 
-processActionResult :: FilePath -> ReadProcessResult -> RepoUpdateResult
-processActionResult repo (ExitSuccess     , out, _  ) = undefined
-processActionResult repo (ExitFailure code, _  , err) = undefined
+--
+--
+executeAction :: RepoUpdateResult -> Text -> RIO App RepoUpdateResult
+executeAction result action =
+    Log.logMsg ("Executing command: " <> commandLine)
+        >>  last
+        <$> mapM doExecute commands
+  where
+    commandLine = intercalate "\n" (unwords <$> commands)
+    commands    = fmap T.unpack . T.words <$> prepareCommandLine result action
 
+    doExecute [] = -- this should not happen at this point
+        Log.warn ("There is no action defined for " <> updateResultRepo result)
+            >> return result
+    doExecute [command] =
+        processActionResult result <$> proc command [] readProcess
+    doExecute (command : args) =
+        processActionResult result <$> proc command args readProcess
+
+--
+--
+prepareCommandLine :: RepoUpdateResult -> Text -> [Text]
+prepareCommandLine result action
+    | "[[REPO-PATH]]" `T.isInfixOf` action
+    = [TP.replace "[[REPO-PATH]]" (T.pack $ updateResultRepo result) action]
+    | otherwise
+    = ["cd " <> T.pack (updateResultRepo result), action]
+
+--
+--
+processActionResult
+    :: RepoUpdateResult -> ReadProcessResult -> RepoUpdateResult
+processActionResult result (ExitSuccess     , out, _  ) = result
+    { updateErrorOrSuccess = Right $ GitOpResult
+        { resultType = ActionExd
+        , resultText = "Repo updated, and action executed: " <> out
+        }
+    }
+processActionResult result (ExitFailure code, _  , err) = result
+    { updateErrorOrSuccess = Left $ GitOpError
+                                 { errorCode    = code
+                                 , errorMessage =
+                                     "Repo updated, but action failed: " <> err
+                                 }
+    }
+
+--
+--
 warnNotFound :: [RepoUpdateResult] -> FilePath -> RIO App [RepoUpdateResult]
 warnNotFound results actions =
     Log.warn ("File " ++ actions ++ " not found. No actions will be executed.")

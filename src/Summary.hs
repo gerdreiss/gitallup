@@ -21,7 +21,7 @@ printSummary results = do
     Log.logMsg
         "\n\n============================================================"
 
-    let newResults = filter (not . isGeneralSuccess) results
+    let newResults = filter (not . withResultType GeneralSuccess) results
         errors     = filter (isLeft . updateErrorOrSuccess) newResults
 
     Log.logMsg $ "Repos processed  : " ++ show (length newResults)
@@ -30,11 +30,6 @@ printSummary results = do
     if status
         then printStatusSummary newResults
         else printUpdateSummary newResults
-
-  where
-    isGeneralSuccess res = either (const False)
-                                  ((== GeneralSuccess) . resultType)
-                                  (updateErrorOrSuccess res)
 
 --
 --
