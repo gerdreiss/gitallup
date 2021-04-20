@@ -74,7 +74,7 @@ executeActionIfDefined result action | T.null action = return result
 --
 executeAction :: RepoUpdateResult -> Text -> RIO App RepoUpdateResult
 executeAction result action =
-    Log.logMsg ("Executing command: " <> commandLine)
+    Log.logMsg ("Executing command:\n" <> commandLine)
         >>  last
         <$> mapM doExecute commands
   where

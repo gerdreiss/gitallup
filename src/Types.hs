@@ -1,6 +1,6 @@
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8                 -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -168,7 +168,7 @@ instance Show GitOpResultType where
   show Updated        = " updated successfully."
   show Reset          = " reset succesfully."
   show UpToDate       = " already up to date."
-  show ActionExd      = " executed."
+  show ActionExd      = " action executed."
   show GeneralSuccess = " operation successful, whatever it was ¯\\_(ツ)_/¯"
 
 instance Show GitOpResult where
@@ -181,9 +181,9 @@ instance Show GitOpResult where
 
 instance Show GitOpError where
   show err = concat
-    [ "Update failed with "
+    [ "Update failed with\ncode    : "
     , show (errorCode err)
-    , " - "
+    , "\nmessage : "
     , C8.unpack (errorMessage err)
     ]
 
