@@ -4,25 +4,31 @@
 
 With `stack exec -- gitallup --help` to see this text:
   ~~~~
-  Update all GIT repos in directory
+Update all GIT repos in directory
 
-  Usage: gitallup [--version] [--help] [-p|--path PATH] [-r|--recursive] 
-                  [-d|--depth NUMBER] [-m|--main] [-f|--force] 
-                  [-x|--exclude LIST] [-v|--verbose]
-    Walks through all subdirectories of the given or current directory, and
-    performs git pull on all GIT repos
+Usage: gitallup-exe [--version] [--help] [-p|--path PATH] [-r|--recursive]
+                    [-d|--depth NUMBER] [-S|--status] [-m|--main-branch]
+                    [-f|--force] [-x|--exclude LIST] [-a|--actions FILE]
+                    [-v|--verbose]
+  Walks through all subdirectories of the given or current directory, and checks
+  the status or performs git pull on all GIT repos
 
-  Available options:
-    --version                Show version
-    --help                   Show this help text
-    -p,--path PATH           Path to directory where to update all existing GIT
-                             repos (default: ".")
-    -r,--recursive           Go recursively through subdirectories which are not
-                             GIT repos?
-    -d,--depth NUMBER        The depth of directory recursion (default: -1)
-    -m,--main                Switch all to main branch?
-    -f,--force               Force update overriding any local changes?
-    -x,--exclude LIST        List of directories/repositories to be excluded from
-                             updating, comma separated
-    -v,--verbose             Verbose output?
+Available options:
+  --version                Show version
+  --help                   Show this help text
+  -p,--path PATH           Path to directory where to update all existing GIT
+                           repos (default: ".")
+  -r,--recursive           Go recursively through subdirectories which are not
+                           GIT repos?
+  -d,--depth NUMBER        The depth of directory recursion (default: -1)
+  -S,--status              Check status of the repositories.
+  -m,--main-branch         Switch all to main/default branch? Ignored when
+                           --status/-S is passed as parameter.
+  -f,--force               Force update overriding any local changes? Ignored
+                           when --status/-S is passed as parameter.
+  -x,--exclude LIST        List of directories/repositories to be excluded from
+                           updating, comma separated
+  -a,--actions FILE        Path to the file that contains actions for select
+                           repositories
+  -v,--verbose             Verbose output?
     ~~~~
