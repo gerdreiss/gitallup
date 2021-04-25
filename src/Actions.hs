@@ -8,10 +8,6 @@ import qualified RIO.Text                      as T
 import qualified RIO.Text.Partial              as TP
 
 import           Control.Monad.Extra            ( ifM )
-import           Control.Parallel.Strategies    ( parList
-                                                , rpar
-                                                , using
-                                                )
 import           Data.Configurator              ( load
                                                 , lookup
                                                 )
@@ -48,7 +44,7 @@ executeActions :: [RepoUpdateResult] -> FilePath -> RIO App [RepoUpdateResult]
 executeActions results actionFile = do
     config  <- liftIO $ load [Required actionFile]
     actions <- liftIO $ getActions results config
-    sequence (map (uncurry executeActionIfDefined) actions `using` parList rpar)
+    mapM (uncurry executeActionIfDefined) actions
 
 --
 --
