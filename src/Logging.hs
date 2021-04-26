@@ -10,7 +10,7 @@ module Logging
   , error
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8           -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
 
 import           RIO                     hiding ( error
                                                 , force
