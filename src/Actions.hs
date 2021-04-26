@@ -11,18 +11,17 @@ import           Control.Monad.Extra            ( ifM )
 import           Data.Configurator              ( load
                                                 , lookup
                                                 )
+import           Data.Configurator.Types        ( Config
+                                                , Worth(Required)
+                                                )
 import           RIO                     hiding ( display
                                                 , force
                                                 , lookup
                                                 )
-import           RIO.Directory                  ( doesFileExist )
-
-import           Data.Configurator.Types        ( Config
-                                                , Worth(Required)
+import           RIO.Directory                  ( doesFileExist
+                                                , setCurrentDirectory
                                                 )
-import           Data.List                      ( last )
 import           RIO.FilePath                   ( takeFileName )
-import           RIO.List                       ( intercalate )
 import           RIO.Process                    ( proc
                                                 , readProcess
                                                 )
@@ -63,36 +62,36 @@ getAction config result
 --
 --
 executeActionIfDefined :: RepoUpdateResult -> Text -> RIO App RepoUpdateResult
-executeActionIfDefined result action | T.null action = return result
-                                     | otherwise = executeAction result action
-
---
---
-executeAction :: RepoUpdateResult -> Text -> RIO App RepoUpdateResult
-executeAction result action =
-    Log.logMsg ("Executing command:\n" <> commandLine)
-        >>  last
-        <$> mapM doExecute commands
-  where
-    commandLine = intercalate "\n" (unwords <$> commands)
-    commands    = fmap T.unpack . T.words <$> prepareCommandLine result action
-
-    doExecute [] = -- this should not happen at this point
-        Log.warn ("There is no action defined for " <> updateResultRepo result)
-            >> return result
-    doExecute [command] =
-        processActionResult result <$> proc command [] readProcess
-    doExecute (command : args) =
-        processActionResult result <$> proc command args readProcess
-
---
---
-prepareCommandLine :: RepoUpdateResult -> Text -> [Text]
-prepareCommandLine result action
-    | "[[REPO-PATH]]" `T.isInfixOf` action
-    = [TP.replace "[[REPO-PATH]]" (T.pack $ updateResultRepo result) action]
+executeActionIfDefined result action
+    | T.null action
+    = return result
     | otherwise
-    = ["cd " <> T.pack (updateResultRepo result), action]
+    = Log.logMsgT ("Executing command: " <> action)
+        >>  prepareCommandLine result action
+        >>= executeAction result
+
+--
+--
+prepareCommandLine :: RepoUpdateResult -> Text -> RIO App [String]
+prepareCommandLine result action
+    | "[[REPO-PATH]]" `T.isInfixOf` action = return
+    . words
+    . T.unpack
+    $ TP.replace "[[REPO-PATH]]" (T.pack $ updateResultRepo result) action
+    | otherwise = do
+        setCurrentDirectory (updateResultRepo result)
+        return . words . T.unpack $ action
+
+--
+--
+executeAction :: RepoUpdateResult -> [FilePath] -> RIO App RepoUpdateResult
+executeAction result [] = -- this should not happen at this point
+    Log.warn ("There is no action defined for " <> updateResultRepo result)
+        >> return result
+executeAction result [command] =
+    processActionResult result <$> proc command [] readProcess
+executeAction result (command : args) =
+    processActionResult result <$> proc command args readProcess
 
 --
 --

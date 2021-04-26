@@ -2,6 +2,7 @@ module Logging
   ( logInput
   , logRepo
   , logMsg
+  , logMsgT
   , logRes
   , logErr
   , debug
@@ -9,7 +10,7 @@ module Logging
   , error
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8     -- TODO replace this with RIO's package or function
 
 import           RIO                     hiding ( error
                                                 , force
@@ -83,6 +84,12 @@ logRes msg res =
 --
 logMsg :: String -> RIO App ()
 logMsg = logInfo . fromString
+
+--
+--
+logMsgT :: Text -> RIO App ()
+logMsgT = logInfo . display
+
 
 --
 --
