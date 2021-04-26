@@ -1,12 +1,16 @@
 module Util
   ( spanM
   , removeDuplicatesComparingBy
-  )
-where
+  ) where
 
 import           Control.Monad.Extra            ( ifM )
 import           Data.List.Extra                ( groupOn )
-import           RIO
+import           RIO                            ( (.)
+                                                , Bool
+                                                , Monad(return)
+                                                , Ord
+                                                , map
+                                                )
 import           RIO.List                       ( sortOn )
 import           RIO.List.Partial               ( head )
 
