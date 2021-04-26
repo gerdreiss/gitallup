@@ -70,9 +70,8 @@ listNestedRepos recursive depth excluded subdirs
 -- Check git status of or update the repositories
 --
 checkStatusOrUpdateRepos :: [FilePath] -> RIO App [RepoUpdateResult]
-checkStatusOrUpdateRepos repos = do
-  status <- view statusL
-  if status then checkStatusRepos repos else updateRepos repos
+checkStatusOrUpdateRepos repos =
+  ifM (view statusL) (checkStatusRepos repos) (updateRepos repos)
 
 --
 -- Check status
@@ -94,16 +93,12 @@ updateRepos repos =
 
 updateRepo :: FilePath -> RIO App [RepoUpdateResult]
 updateRepo repo = Log.logRepo repo >> do
-  force       <- view forceL
-  forceResult <- if force
-    then checkIsDirtyAndHardResetCurrentBranch repo
-    else RepoUpdateResult repo Nothing <$> Git.updateBranch repo
-
-  main        <- view mainL
-  mainResult  <- if main
-    then checkCurrentBranchSwitchUpdate repo
-    else generalSuccessResult repo Nothing "Done."
-
+  forceResult <- ifM (view forceL)
+                     (checkIsDirtyAndHardResetCurrentBranch repo)
+                     (RepoUpdateResult repo Nothing <$> Git.updateBranch repo)
+  mainResult  <- ifM (view mainL)
+                     (checkCurrentBranchSwitchUpdate repo)
+                     (generalSuccessResult repo Nothing "Done.")
   return [forceResult, mainResult]
 
 checkIsDirtyAndHardResetCurrentBranch :: FilePath -> RIO App RepoUpdateResult

@@ -4,6 +4,7 @@ module Summary
 
 import qualified Logging                       as Log
 
+import           Control.Monad.Extra            ( ifM )
 import           RIO                     hiding ( force )
 import           RIO.List                       ( partition )
 import           Text.Pretty.Simple             ( pPrint )
@@ -15,9 +16,6 @@ import           Types
 --
 printSummary :: [RepoUpdateResult] -> RIO App ()
 printSummary results = do
-
-    status <- view statusL
-
     Log.logMsg
         "\n\n============================================================"
 
@@ -27,9 +25,9 @@ printSummary results = do
     Log.logMsg $ "Repos processed  : " ++ show (length newResults)
     Log.logMsg $ "Errors occurred  : " ++ show (length errors)
 
-    if status
-        then printStatusSummary newResults
-        else printUpdateSummary newResults
+    ifM (view statusL)
+        (printStatusSummary newResults)
+        (printUpdateSummary newResults)
 
 --
 --
