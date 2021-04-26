@@ -6,10 +6,10 @@ With `stack exec -- gitallup --help` to see this text:
   ~~~~
 Update all GIT repos in directory
 
-Usage: gitallup-exe [--version] [--help] [-p|--path PATH] [-r|--recursive]
-                    [-d|--depth NUMBER] [-S|--status] [-m|--main-branch]
-                    [-f|--force] [-x|--exclude LIST] [-a|--actions FILE]
-                    [-v|--verbose]
+Usage: gitallup [--version] [--help] [-p|--path PATH] [-r|--recursive]
+                [-d|--depth NUMBER] [-S|--status] [-m|--main-branch]
+                [-f|--force] [-x|--exclude LIST] [-a|--actions FILE]
+                [-v|--verbose]
   Walks through all subdirectories of the given or current directory, and checks
   the status or performs git pull on all GIT repos
 
