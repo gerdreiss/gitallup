@@ -66,14 +66,14 @@ executeActionIfDefined result action
     | T.null action
     = return result
     | otherwise
-    = Log.logMsgT ("Executing command: " <> action)
-        >>  prepareCommandLine result action
+    = Log.logAction action result
+        >>  prepareCommandLine action result
         >>= executeAction result
 
 --
 --
-prepareCommandLine :: RepoUpdateResult -> Text -> RIO App [String]
-prepareCommandLine result action
+prepareCommandLine :: Text -> RepoUpdateResult -> RIO App [String]
+prepareCommandLine action result
     | "[[REPO-PATH]]" `T.isInfixOf` action = return
     . words
     . T.unpack
@@ -99,7 +99,7 @@ processActionResult
     :: RepoUpdateResult -> ReadProcessResult -> RepoUpdateResult
 processActionResult result (ExitSuccess     , out, _  ) = result
     { updateErrorOrSuccess = Right $ GitOpResult
-        { resultType = ActionExd
+        { resultType = ActionExecuted
         , resultText = "Repo updated, and action executed: " <> out
         }
     }

@@ -22,7 +22,7 @@ data GitOpResultType
   | UpToDate
   | Updated
   | Reset
-  | ActionExd
+  | ActionExecuted
   | GeneralSuccess
   deriving (Eq, Generic)
 
@@ -168,7 +168,7 @@ instance Show GitOpResultType where
   show Updated        = " updated successfully."
   show Reset          = " reset succesfully."
   show UpToDate       = " already up to date."
-  show ActionExd      = " action executed."
+  show ActionExecuted = " action executed."
   show GeneralSuccess = " operation successful, whatever it was ¯\\_(ツ)_/¯"
 
 instance Show GitOpResult where

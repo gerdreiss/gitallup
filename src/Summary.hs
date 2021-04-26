@@ -68,6 +68,7 @@ printUpdateSummary results = do
     isUpToDate res = either (const False)
                             ((== UpToDate) . resultType)
                             (updateErrorOrSuccess res)
-    isUpdated res = either (const False)
-                           ((`elem` [Updated, Reset]) . resultType)
-                           (updateErrorOrSuccess res)
+    isUpdated res = either
+        (const False)
+        ((`elem` [Updated, Reset, ActionExecuted]) . resultType)
+        (updateErrorOrSuccess res)

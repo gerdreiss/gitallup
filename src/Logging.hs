@@ -1,8 +1,8 @@
 module Logging
   ( logInput
   , logRepo
+  , logAction
   , logMsg
-  , logMsgT
   , logRes
   , logErr
   , debug
@@ -10,11 +10,12 @@ module Logging
   , error
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8     -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8           -- TODO replace this with RIO's package or function
 
 import           RIO                     hiding ( error
                                                 , force
                                                 )
+import           RIO.Text                       ( unpack )
 import           Types
 
 --
@@ -66,30 +67,26 @@ logInput = do
 logRepo :: FilePath -> RIO App ()
 logRepo repo = do
   status <- view statusL
-  logInfo
-    .  fromString
+  logMsg
     $  (if status then "checking status for repo: " else "updating repo: ")
     ++ repo
 
 --
 --
+logAction :: Text -> RepoUpdateResult -> RIO App ()
+logAction action result = logMsg
+  ("Executing command: " <> unpack action <> " in " <> updateResultRepo result)
+
+--
+--
 logRes :: String -> GitOpResult -> RIO App ()
 logRes msg res =
-  logInfo
-    . fromString
-    . concat
-    $ ["Success => ", msg, " ", show (resultType res)]
+  logMsg . concat $ ["Success => ", msg, " ", show (resultType res)]
 
 --
 --
 logMsg :: String -> RIO App ()
 logMsg = logInfo . fromString
-
---
---
-logMsgT :: Text -> RIO App ()
-logMsgT = logInfo . display
-
 
 --
 --
