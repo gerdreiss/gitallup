@@ -63,24 +63,31 @@ getAction config result
 --
 executeActionIfDefined :: RepoUpdateResult -> Text -> RIO App RepoUpdateResult
 executeActionIfDefined result action
-    | T.null action
-    = return result
-    | otherwise
-    = Log.logAction action result
-        >>  prepareCommandLine action result
-        >>= executeAction result
+    | T.null action = return result
+    | otherwise     = prepareCommandLine action result >>= executeAction result
 
 --
 --
 prepareCommandLine :: Text -> RepoUpdateResult -> RIO App [String]
 prepareCommandLine action result
-    | "[[REPO-PATH]]" `T.isInfixOf` action = return
-    . words
-    . T.unpack
-    $ TP.replace "[[REPO-PATH]]" (T.pack $ updateResultRepo result) action
+    | "[[REPO-PATH]]" `T.isInfixOf` action = do
+        let commandLine = words . T.unpack $ TP.replace
+                "[[REPO-PATH]]"
+                (T.pack $ updateResultRepo result)
+                action
+        Log.logMsg ("Executing " ++ unwords commandLine)
+        return commandLine
     | otherwise = do
         setCurrentDirectory (updateResultRepo result)
-        return . words . T.unpack $ action
+        let commandLine = words . T.unpack $ action
+        Log.logMsg
+            $ concat
+                  [ "Executing "
+                  , unwords commandLine
+                  , " in "
+                  , updateResultRepo result
+                  ]
+        return commandLine
 
 --
 --

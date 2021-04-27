@@ -1,7 +1,6 @@
 module Logging
   ( logInput
   , logRepo
-  , logAction
   , logMsg
   , logRes
   , logErr
@@ -16,7 +15,6 @@ import           Control.Monad.Extra            ( ifM )
 import           RIO                     hiding ( error
                                                 , force
                                                 )
-import           RIO.Text                       ( unpack )
 import           Types
 
 --
@@ -69,12 +67,6 @@ logRepo :: FilePath -> RIO App ()
 logRepo repo = ifM (view statusL)
                    (logMsg $ "checking status for repo: " <> repo)
                    (logMsg $ "updating repo: " <> repo)
-
---
---
-logAction :: Text -> RepoUpdateResult -> RIO App ()
-logAction action result = logMsg $ concat
-  ["Executing command: ", unpack action, " in ", updateResultRepo result]
 
 --
 --
