@@ -106,15 +106,16 @@ processActionResult
     :: RepoUpdateResult -> ReadProcessResult -> RepoUpdateResult
 processActionResult result (ExitSuccess     , out, _  ) = result
     { updateErrorOrSuccess = Right $ GitOpResult
-        { resultType = ActionExecuted
-        , resultText = "Repo updated, and action executed: " <> out
-        }
+                                 { resultType = ActionExecuted
+                                 , resultText =
+                                     "Repo updated and action executed: " <> out
+                                 }
     }
 processActionResult result (ExitFailure code, _  , err) = result
     { updateErrorOrSuccess = Left $ GitOpError
                                  { errorCode    = code
                                  , errorMessage =
-                                     "Repo updated, but action failed: " <> err
+                                     "Repo updated but action failed: " <> err
                                  }
     }
 

@@ -1,6 +1,6 @@
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8   -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -168,14 +168,20 @@ instance Show GitOpResultType where
   show Updated        = " updated successfully."
   show Reset          = " reset succesfully."
   show UpToDate       = " already up to date."
-  show ActionExecuted = " action executed."
+  show ActionExecuted = " updated and configured action executed."
   show GeneralSuccess = " operation successful, whatever it was ¯\\_(ツ)_/¯"
 
 instance Show GitOpResult where
   show res = concat
     [ show (resultType res)
     , "\nResult text:\n"
-    , C8.unpack . C8.intercalate "\n" . take 8 . C8.lines . resultText $ res
+    , C8.unpack
+    . C8.intercalate "\n"
+    . take 8
+    . filter (not . C8.null)
+    . C8.lines
+    . resultText
+    $ res
     , "\n\n"
     ]
 
