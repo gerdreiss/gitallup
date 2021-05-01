@@ -17,13 +17,14 @@ import           Control.Parallel.Strategies    ( parList
                                                 )
 import           Data.List.Split                ( splitOn )
 import           RIO                     hiding ( force )
-import           RIO.List                       ( partition )
-import           System.Directory               ( doesDirectoryExist
+import           RIO.Directory                  ( doesDirectoryExist
                                                 , listDirectory
                                                 , makeAbsolute
                                                 )
-import           System.FilePath                ( (</>) )
-import           Text.Pretty.Simple             ( pPrint )
+import           RIO.FilePath                   ( (</>) )
+
+import           Actions
+import           Summary
 import           Types
 
 --
@@ -37,6 +38,7 @@ run = do
   root      <- view directoryL
   liftIO (listRepos recursive depth (splitOn "," exclude) root)
     >>= checkStatusOrUpdateRepos
+    >>= checkAndExecuteActions
     >>= printSummary
 
 --
@@ -68,9 +70,8 @@ listNestedRepos recursive depth excluded subdirs
 -- Check git status of or update the repositories
 --
 checkStatusOrUpdateRepos :: [FilePath] -> RIO App [RepoUpdateResult]
-checkStatusOrUpdateRepos repos = do
-  status <- view statusL
-  if status then checkStatusRepos repos else updateRepos repos
+checkStatusOrUpdateRepos repos =
+  ifM (view statusL) (checkStatusRepos repos) (updateRepos repos)
 
 --
 -- Check status
@@ -92,16 +93,12 @@ updateRepos repos =
 
 updateRepo :: FilePath -> RIO App [RepoUpdateResult]
 updateRepo repo = Log.logRepo repo >> do
-  force       <- view forceL
-  forceResult <- if force
-    then checkIsDirtyAndHardResetCurrentBranch repo
-    else RepoUpdateResult repo Nothing <$> Git.updateBranch repo
-
-  main        <- view mainL
-  mainResult  <- if main
-    then checkCurrentBranchSwitchUpdate repo
-    else generalSuccessResult repo Nothing "Done."
-
+  forceResult <- ifM (view forceL)
+                     (checkIsDirtyAndHardResetCurrentBranch repo)
+                     (RepoUpdateResult repo Nothing <$> Git.updateBranch repo)
+  mainResult  <- ifM (view mainL)
+                     (checkCurrentBranchSwitchUpdate repo)
+                     (generalSuccessResult repo Nothing "Done.")
   return [forceResult, mainResult]
 
 checkIsDirtyAndHardResetCurrentBranch :: FilePath -> RIO App RepoUpdateResult
@@ -207,67 +204,3 @@ noMainBranchErrorResult repo = return $ RepoUpdateResult
   }
   where message = C8.pack ("Repo" ++ repo ++ "has no main branch (WTF?)")
 
---
---
--- prints the status or update summary
---
-printSummary :: [RepoUpdateResult] -> RIO App ()
-printSummary results = do
-
-  status <- view statusL
-
-  Log.logMsg "\n\n============================================================"
-
-  let newResults = filter (not . isGeneralSuccess) results
-      errors     = filter (isLeft . updateErrorOrSuccess) newResults
-
-  Log.logMsg $ "Repos processed  : " ++ show (length newResults)
-  Log.logMsg $ "Errors occurred  : " ++ show (length errors)
-
-  if status
-    then printStatusSummary newResults
-    else printUpdateSummary newResults
-
- where
-  isGeneralSuccess res = either (const False)
-                                ((== GeneralSuccess) . resultType)
-                                (updateErrorOrSuccess res)
-
---
---
-printStatusSummary :: [RepoUpdateResult] -> RIO App ()
-printStatusSummary results = do
-  let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
-      dirty               = filter isDirty successes
-
-  Log.logMsg $ "Repos dirty      : " ++ show (length dirty)
-  Log.logMsg "\n"
-
-  mapM_ pPrint errors
-  mapM_ pPrint dirty
-
- where
-  isDirty res =
-    either (const False) ((== Dirty) . resultType) (updateErrorOrSuccess res)
-
---
---
-printUpdateSummary :: [RepoUpdateResult] -> RIO App ()
-printUpdateSummary results = do
-  let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
-      upToDate            = filter isUpToDate successes
-      updated             = filter isUpdated successes
-
-  Log.logMsg $ "Repos up to date : " ++ show (length upToDate)
-  Log.logMsg $ "Repos updated    : " ++ show (length updated)
-  Log.logMsg "\n"
-
-  mapM_ pPrint errors
-  mapM_ pPrint updated
-
- where
-  isUpToDate res =
-    either (const False) ((== UpToDate) . resultType) (updateErrorOrSuccess res)
-  isUpdated res = either (const False)
-                         ((`elem` [Updated, Reset]) . resultType)
-                         (updateErrorOrSuccess res)

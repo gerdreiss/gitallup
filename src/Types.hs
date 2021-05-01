@@ -22,6 +22,7 @@ data GitOpResultType
   | UpToDate
   | Updated
   | Reset
+  | ActionExecuted
   | GeneralSuccess
   deriving (Eq, Generic)
 
@@ -52,6 +53,7 @@ data Options = Options
   , optionsMain           :: !Bool
   , optionsForce          :: !Bool
   , optionsExclude        :: !FilePath
+  , optionsActions        :: Maybe FilePath
   , optionsVerbose        :: !Bool
   }
 
@@ -86,6 +88,9 @@ class HasForce env where
 
 class HasExclude env where
   excludeL :: Lens' env FilePath
+
+class HasActions env where
+  actionsL :: Lens' env (Maybe FilePath)
 
 class HasUserHome env where
   userHomeL :: Lens' env FilePath
@@ -144,6 +149,12 @@ instance HasExclude App where
     appOptionsL     = lens appOptions (\x y -> x { appOptions = y })
     optionsExcludeL = lens optionsExclude (\x y -> x { optionsExclude = y })
 
+instance HasActions App where
+  actionsL = appOptionsL . optionsActionsL
+   where
+    appOptionsL     = lens appOptions (\x y -> x { appOptions = y })
+    optionsActionsL = lens optionsActions (\x y -> x { optionsActions = y })
+
 instance HasLogFunc App where
   logFuncL = lens appLogFunc (\x y -> x { appLogFunc = y })
 
@@ -157,21 +168,28 @@ instance Show GitOpResultType where
   show Updated        = " updated successfully."
   show Reset          = " reset succesfully."
   show UpToDate       = " already up to date."
+  show ActionExecuted = " updated and configured action executed."
   show GeneralSuccess = " operation successful, whatever it was ¯\\_(ツ)_/¯"
 
 instance Show GitOpResult where
   show res = concat
     [ show (resultType res)
     , "\nResult text:\n"
-    , C8.unpack . C8.intercalate "\n" . take 8 . C8.lines . resultText $ res
+    , C8.unpack
+    . C8.intercalate "\n"
+    . take 8
+    . filter (not . C8.null)
+    . C8.lines
+    . resultText
+    $ res
     , "\n\n"
     ]
 
 instance Show GitOpError where
   show err = concat
-    [ "Update failed with "
+    [ "Update failed with\ncode    : "
     , show (errorCode err)
-    , " - "
+    , "\nmessage : "
     , C8.unpack (errorMessage err)
     ]
 
@@ -183,3 +201,8 @@ instance Show RepoUpdateResult where
     , either show show (updateErrorOrSuccess res)
     , "\n\n"
     ]
+
+
+withResultType :: GitOpResultType -> RepoUpdateResult -> Bool
+withResultType resType result =
+  either (const False) ((== resType) . resultType) (updateErrorOrSuccess result)

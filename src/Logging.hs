@@ -5,11 +5,13 @@ module Logging
   , logRes
   , logErr
   , debug
+  , warn
   , error
   ) where
 
 import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
 
+import           Control.Monad.Extra            ( ifM )
 import           RIO                     hiding ( error
                                                 , force
                                                 )
@@ -62,21 +64,15 @@ logInput = do
 --
 --
 logRepo :: FilePath -> RIO App ()
-logRepo repo = do
-  status <- view statusL
-  logInfo
-    .  fromString
-    $  (if status then "checking status for repo: " else "updating repo: ")
-    ++ repo
+logRepo repo = ifM (view statusL)
+                   (logMsg $ "checking status for repo: " <> repo)
+                   (logMsg $ "updating repo: " <> repo)
 
 --
 --
 logRes :: String -> GitOpResult -> RIO App ()
 logRes msg res =
-  logInfo
-    . fromString
-    . concat
-    $ ["Success => ", msg, " ", show (resultType res)]
+  logMsg $ concat ["Success => ", msg, " ", show (resultType res)]
 
 --
 --
@@ -86,11 +82,8 @@ logMsg = logInfo . fromString
 --
 --
 logErr :: GitOpError -> RIO App ()
-logErr err =
-  logError
-    . fromString
-    . concat
-    $ ["Failed => ", show (errorCode err), " - ", C8.unpack (errorMessage err)]
+logErr err = error $ concat
+  ["Failed => ", show (errorCode err), " - ", C8.unpack (errorMessage err)]
 
 --
 --
@@ -101,3 +94,8 @@ debug = logDebug . fromString
 --
 error :: String -> RIO App ()
 error = logError . fromString
+
+--
+--
+warn :: String -> RIO App ()
+warn = logWarn . fromString
