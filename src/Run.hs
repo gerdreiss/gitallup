@@ -37,7 +37,7 @@ run = do
   exclude   <- view excludeL
   root      <- view directoryL
   liftIO (listRepos recursive depth (splitOn "," exclude) root)
-    >>= checkStatusOrUpdateRepos
+    >>= checkStatusCleanupOrUpdateRepos
     >>= checkAndExecuteActions
     >>= printSummary
 
@@ -67,11 +67,23 @@ listNestedRepos recursive depth excluded subdirs
   | otherwise = return []
 
 --
--- Check git status of or update the repositories
+-- Check git status of or clean up or update the repositories
 --
-checkStatusOrUpdateRepos :: [FilePath] -> RIO App [RepoUpdateResult]
-checkStatusOrUpdateRepos repos =
-  ifM (view statusL) (checkStatusRepos repos) (updateRepos repos)
+checkStatusCleanupOrUpdateRepos :: [FilePath] -> RIO App [RepoUpdateResult]
+checkStatusCleanupOrUpdateRepos repos = ifM
+  (view statusL)
+  (checkStatusRepos repos)
+  (ifM (view cleanupL) (cleanupRepos repos) (updateRepos repos))
+
+-- 
+-- Cleanup
+--
+cleanupRepos :: [FilePath] -> RIO App [RepoUpdateResult]
+cleanupRepos repos = sequence (map cleanupRepo repos `using` parList rpar)
+
+cleanupRepo :: FilePath -> RIO App RepoUpdateResult
+cleanupRepo repo =
+  Log.logRepo repo >> RepoUpdateResult repo Nothing <$> Git.cleanRepo repo
 
 --
 -- Check status

@@ -50,6 +50,7 @@ data Options = Options
   , optionsRecursive      :: !Bool
   , optionsRecursiveDepth :: !Int
   , optionsStatus         :: !Bool
+  , optionsCleanup        :: !Bool
   , optionsMain           :: !Bool
   , optionsForce          :: !Bool
   , optionsExclude        :: !FilePath
@@ -79,6 +80,9 @@ class HasRecursiveDepth env where
 
 class HasStatus env where
   statusL :: Lens' env Bool
+
+class HasCleanup env where
+  cleanupL :: Lens' env Bool
 
 class HasMain env where
   mainL :: Lens' env Bool
@@ -130,6 +134,12 @@ instance HasStatus App where
    where
     appOptionsL    = lens appOptions (\x y -> x { appOptions = y })
     optionsStatusL = lens optionsStatus (\x y -> x { optionsStatus = y })
+
+instance HasCleanup App where
+  cleanupL = appOptionsL . optionsCleanupL
+   where
+    appOptionsL     = lens appOptions (\x y -> x { appOptions = y })
+    optionsCleanupL = lens optionsCleanup (\x y -> x { optionsCleanup = y })
 
 instance HasMain App where
   mainL = appOptionsL . optionsMainL

@@ -3,6 +3,7 @@ module Git
   , currentBranch
   , mainBranch
   , switchBranch
+  , cleanRepo
   , resetHard
   , updateBranch
   , branchStatus
@@ -57,14 +58,15 @@ isDirty repo =
   _extractBranchIsDirty <$> proc "git" ["-C", repo, "status"] readProcess
 
 --
--- actions
 --
 branchStatus :: FilePath -> RIO App (Either GitOpError GitOpResult)
 branchStatus repo =
   _extractGitOpErrorOrResult <$> proc "git" ["-C", repo, "status"] readProcess
 
 --
+-- actions
 --
+
 switchBranch
   :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpResult)
 switchBranch repo branch =
@@ -88,6 +90,13 @@ resetHard repo branch =
     <$> proc "git"
              ["-C", repo, "reset", "--hard", "origin/" ++ C8.unpack branch]
              readProcess
+
+--
+--
+cleanRepo :: FilePath -> RIO App (Either GitOpError GitOpResult)
+cleanRepo repo =
+  _extractGitOpErrorOrResult
+    <$> proc "git" ["-C", repo, "clean", "-fdx"] readProcess
 
 --
 --

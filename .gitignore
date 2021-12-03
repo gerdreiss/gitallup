@@ -3,3 +3,4 @@
 *.lock
 tarballs/
 .stack-work/
+.history/

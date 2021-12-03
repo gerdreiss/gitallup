@@ -34,22 +34,23 @@ options =
     <*> recursive
     <*> recursiveDepth
     <*> status
+    <*> cleanup    
     <*> mainBranch
     <*> force
     <*> exclude
     <*> actions
-    <*> verbose   
+    <*> verbose
 
-directory :: Parser FilePath 
+directory :: Parser FilePath
 directory =
   strOption
     ( long "path"
-        <> short 'p'
-        <> metavar "PATH"
-        <> showDefault
-        <> value "."
-        <> help "Path to directory where to update all existing GIT repos"
-    )
+  <> short 'p'
+  <> metavar "PATH"
+  <> showDefault
+  <> value "."
+  <> help "Path to directory where to update all existing GIT repos"
+  )
 
 recursive :: Parser Bool
 recursive =
@@ -64,12 +65,12 @@ recursiveDepth =
   option
     auto
       ( long "depth"
-          <> short 'd'
-          <> metavar "NUMBER"
-          <> showDefault
-          <> value (-1) -- -1 means the depth is not restricted
-          <> help "The depth of directory recursion"
-      )
+  <> short 'd'
+  <> metavar "NUMBER"
+  <> showDefault
+  <> value (-1) -- -1 means the depth is not restricted
+  <> help "The depth of directory recursion"
+  )
 
 status :: Parser Bool
 status =
@@ -77,6 +78,14 @@ status =
     ( long "status"
         <> short 'S'
         <> help "Check status of the repositories."
+    )
+
+cleanup :: Parser Bool
+cleanup =
+  switch
+    ( long "clean"
+        <> short 'C'
+        <> help "Clean up repository."
     )
 
 mainBranch :: Parser Bool

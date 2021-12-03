@@ -22,6 +22,7 @@ import           Types
 logInput :: RIO App ()
 logInput = do
   status    <- view statusL
+  cleanup   <- view cleanupL
   force     <- view forceL
   recursive <- view recursiveL
   depth     <- view recursiveDepthL
@@ -31,7 +32,9 @@ logInput = do
   logInfo
     . fromString
     . concat
-    $ [ if status then mkStrStatus else mkStrUpdate force
+    $ [ if status
+        then mkStrStatus
+        else if cleanup then mkStrCleanup else mkStrUpdate force
       , mkStrRecursive recursive depth
       , mkStrMain main
       , "GIT repos in "
@@ -39,7 +42,8 @@ logInput = do
       , mkStrExclude exclude
       ]
  where
-  mkStrStatus = "Checking status "
+  mkStrStatus  = "Checking status "
+  mkStrCleanup = "Cleaning "
 
   mkStrUpdate True  = "Force updating "
   mkStrUpdate False = "Updating "
@@ -64,9 +68,13 @@ logInput = do
 --
 --
 logRepo :: FilePath -> RIO App ()
-logRepo repo = ifM (view statusL)
-                   (logMsg $ "checking status for repo: " <> repo)
-                   (logMsg $ "updating repo: " <> repo)
+logRepo repo = ifM
+  (view statusL)
+  (logMsg $ "checking status for repo: " <> repo)
+  (ifM (view cleanupL)
+       (logMsg $ "cleaning up repo: " <> repo)
+       (logMsg $ "updating repo: " <> repo)
+  )
 
 --
 --
