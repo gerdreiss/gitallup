@@ -12,7 +12,7 @@ module Git
   , isMainBranch
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8    -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -160,11 +160,13 @@ _extractGitOpResultType result | isUpToDate result   = UpToDate
                                | isReset result      = Reset
                                | hasNoChanges result = Clean
                                | hasChanges result   = Dirty
+                               | cleanedUp result    = CleanedUp
                                | otherwise           = GeneralSuccess
  where
   isUpToDate = B.isPrefixOf "Already up to date"
   isUpdated  = B.isPrefixOf "Updating"
   isReset    = B.isPrefixOf "HEAD is now at"
+  cleanedUp  = B.isPrefixOf "Removing "
   hasNoChanges res = or $ B.isPrefixOf "nothing to commit" <$> C8.lines res
   hasChanges res = or $ isChange <$> C8.lines res
   isChange line =

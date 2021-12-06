@@ -1,6 +1,6 @@
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8   -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8     -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -19,6 +19,7 @@ type ReadProcessResult = (ExitCode, B.ByteString, B.ByteString)
 data GitOpResultType
   = Clean
   | Dirty
+  | CleanedUp
   | UpToDate
   | Updated
   | Reset
@@ -175,6 +176,7 @@ instance HasProcessContext App where
 instance Show GitOpResultType where
   show Clean          = " has nothing to commit."
   show Dirty          = " has uncommitted changes."
+  show CleanedUp      = "cleaned successfully."
   show Updated        = " updated successfully."
   show Reset          = " reset succesfully."
   show UpToDate       = " already up to date."

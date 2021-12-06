@@ -25,9 +25,13 @@ printSummary results = do
     Log.logMsg $ "Repos processed  : " ++ show (length newResults)
     Log.logMsg $ "Errors occurred  : " ++ show (length errors)
 
-    ifM (view statusL)
+    ifM
+        (view statusL)
         (printStatusSummary newResults)
-        (printUpdateSummary newResults)
+        (ifM (view cleanupL)
+             (printCleanupSummary newResults)
+             (printUpdateSummary newResults)
+        )
 
 --
 --
@@ -70,3 +74,19 @@ printUpdateSummary results = do
         (const False)
         ((`elem` [Updated, Reset, ActionExecuted]) . resultType)
         (updateErrorOrSuccess res)
+
+printCleanupSummary :: [RepoUpdateResult] -> RIO App ()
+printCleanupSummary results = do
+    let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
+        cleanedUp           = filter isCleanedUp successes
+
+    Log.logMsg $ "Repos cleaned up : " ++ show (length cleanedUp)
+
+    mapM_ pPrint errors
+    mapM_ pPrint cleanedUp
+  where
+    isCleanedUp res = either (const False)
+                             ((== CleanedUp) . resultType)
+                             (updateErrorOrSuccess res)
+
+
