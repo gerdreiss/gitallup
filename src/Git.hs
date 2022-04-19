@@ -12,7 +12,7 @@ module Git
   , isMainBranch
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8     -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8       -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -96,7 +96,7 @@ resetHard repo branch =
 cleanRepo :: FilePath -> RIO App (Either GitOpError GitOpResult)
 cleanRepo repo =
   _extractGitOpErrorOrResult
-    <$> proc "git" ["-C", repo, "clean", "-id"] readProcess
+    <$> proc "git" ["-C", repo, "clean", "-fdx"] readProcess
 
 --
 --
