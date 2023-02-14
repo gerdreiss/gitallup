@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c237c4d1099dcfc416b92bee5fbc8dfae7319f9fdc1a60225b384713308fcedb
+-- hash: 566fb9f55d524fd75e05e24556f03fca70936a030a4ad2503d3690cd45229acc
 
 name:           gitallup
-version:        0.4.0.0
+version:        0.5.0.0
 description:    Please see the README on Github at <https://github.com/githubuser/gitallup#readme>
 homepage:       https://github.com/gerdreiss/gitallup#readme
 bug-reports:    https://github.com/gerdreiss/gitallup/issues
@@ -85,7 +85,7 @@ library
     , optparse-applicative
     , parallel
     , pretty-simple
-    , rio >=0.1.12.0
+    , rio >=0.1.22.0
     , split
   default-language: Haskell2010
 
@@ -144,6 +144,6 @@ executable gitallup-exe
     , optparse-simple
     , parallel
     , pretty-simple
-    , rio >=0.1.12.0
+    , rio >=0.1.22.0
     , split
   default-language: Haskell2010

@@ -1,5 +1,5 @@
 name: gitallup
-version: 0.4.0.0
+version: 0.5.0.0
 github: gerdreiss/gitallup
 license: BSD3
 author: Gerd Reiss
@@ -21,7 +21,7 @@ description: Please see the README on Github at <https://github.com/githubuser/g
 
 dependencies:
   - base >= 4.11 && < 10
-  - rio >= 0.1.12.0
+  - rio >= 0.1.22.0
   - bytestring
   - configurator
   - extra

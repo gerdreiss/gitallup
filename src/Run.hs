@@ -34,9 +34,10 @@ run = do
   Log.logInput
   recursive <- view recursiveL
   depth     <- view recursiveDepthL
+  only      <- view onlyL
   exclude   <- view excludeL
   root      <- view directoryL
-  liftIO (listRepos recursive depth (splitOn "," exclude) root)
+  liftIO (listRepos recursive depth (splitOn "," only) (splitOn "," exclude) root)
     >>= checkStatusCleanupOrUpdateRepos
     >>= checkAndExecuteActions
     >>= printSummary
@@ -44,26 +45,26 @@ run = do
 --
 -- Listing GIT repos recursively up to a given depth
 --
-listRepos :: Bool -> Int -> [FilePath] -> FilePath -> IO [FilePath]
-listRepos recursive depth excluded root = do
-  (repos, rest) <- listReposAndRest excluded root
-  nested        <- listNestedRepos recursive depth excluded rest
+listRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> FilePath -> IO [FilePath]
+listRepos recursive depth only excluded root = do
+  (repos, rest) <- listReposAndRest only excluded root
+  nested        <- listNestedRepos recursive depth only excluded rest
   return (repos ++ nested)
 
-listReposAndRest :: [FilePath] -> FilePath -> IO ([FilePath], [FilePath])
-listReposAndRest excluded root =
-  makeAbsolute root >>= listDirectories excluded >>= partitionM Git.isGitRepo
+listReposAndRest :: [FilePath] -> [FilePath] -> FilePath -> IO ([FilePath], [FilePath])
+listReposAndRest only excluded root =
+  makeAbsolute root >>= listDirectories only excluded >>= partitionM Git.isGitRepo
 
-listDirectories :: [FilePath] -> FilePath -> IO [FilePath]
-listDirectories excluded path = ifM
+listDirectories :: [FilePath] -> [FilePath] -> FilePath -> IO [FilePath]
+listDirectories only excluded path = ifM
   (doesDirectoryExist path)
-  (fmap (path </>) . filter (`notElem` excluded) <$> listDirectory path)
+  (fmap (path </>) . filter (`notElem` excluded) . filter (`elem` only) <$> listDirectory path)
   (return [])
 
-listNestedRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> IO [FilePath]
-listNestedRepos recursive depth excluded subdirs
+listNestedRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> [FilePath] -> IO [FilePath]
+listNestedRepos recursive depth only excluded subdirs
   | recursive && depth /= 0 && (not . null $ subdirs) = concat <$> sequence
-    (map (listRepos True (depth - 1) excluded) subdirs `using` parList rpar)
+    (map (listRepos True (depth - 1) only excluded) subdirs `using` parList rpar)
   | otherwise = return []
 
 --

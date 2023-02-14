@@ -112,7 +112,7 @@ only =
         <> short 'o'
         <> metavar "LIST"
         <> value ""
-        <> help "List of directories/repositories to be selected, comma separated"
+        <> help "List of directories/repositories to be selected, comma separated."
     )
 
 exclude :: Parser FilePath
@@ -122,7 +122,7 @@ exclude =
         <> short 'x'
         <> metavar "LIST"
         <> value ""
-        <> help "List of directories/repositories to be excluded from updating, comma separated. Ignored when --only/-o is passed as parameter."
+        <> help "List of directories/repositories to be excluded from updating, comma separated."
     )
 
 actions :: Parser (Maybe FilePath)

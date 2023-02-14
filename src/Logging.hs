@@ -28,6 +28,7 @@ logInput = do
   depth     <- view recursiveDepthL
   main      <- view mainL
   root      <- view directoryL
+  only      <- view onlyL
   exclude   <- view excludeL
   logInfo
     . fromString
@@ -39,6 +40,7 @@ logInput = do
       , mkStrMain main
       , "GIT repos in "
       , resolvePath root
+      , mkStrOnly only
       , mkStrExclude exclude
       ]
  where
@@ -56,6 +58,9 @@ logInput = do
 
   mkStrMain True  = "main branches of the "
   mkStrMain False = " "
+
+  mkStrOnly [] = " "
+  mkStrOnly x  = "including only " ++ x ++ " "
 
   mkStrExclude [] = " "
   mkStrExclude x  = "excluding " ++ x
