@@ -37,6 +37,7 @@ options =
     <*> cleanup    
     <*> mainBranch
     <*> force
+    <*> only
     <*> exclude
     <*> actions
     <*> verbose
@@ -104,6 +105,16 @@ force =
         <> help "Force update overriding any local changes? Ignored when --status/-S is passed as parameter."
     )
 
+only :: Parser FilePath
+only = 
+  strOption
+    ( long "only"
+        <> short 'o'
+        <> metavar "LIST"
+        <> value ""
+        <> help "List of directories/repositories to be selected, comma separated"
+    )
+
 exclude :: Parser FilePath
 exclude =
   strOption
@@ -111,7 +122,7 @@ exclude =
         <> short 'x'
         <> metavar "LIST"
         <> value ""
-        <> help "List of directories/repositories to be excluded from updating, comma separated"
+        <> help "List of directories/repositories to be excluded from updating, comma separated. Ignored when --only/-o is passed as parameter."
     )
 
 actions :: Parser (Maybe FilePath)
