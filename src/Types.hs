@@ -54,6 +54,7 @@ data Options = Options
   , optionsCleanup        :: !Bool
   , optionsMain           :: !Bool
   , optionsForce          :: !Bool
+  , optionsOnly           :: !FilePath
   , optionsExclude        :: !FilePath
   , optionsActions        :: Maybe FilePath
   , optionsVerbose        :: !Bool
