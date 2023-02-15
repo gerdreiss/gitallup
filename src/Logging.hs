@@ -12,6 +12,8 @@ module Logging
 import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
 
 import           Control.Monad.Extra            ( ifM )
+import           Data.List                      ( intercalate )
+import           Data.List.Split                ( splitOn )
 import           RIO                     hiding ( error
                                                 , force
                                                 )
@@ -28,8 +30,8 @@ logInput = do
   depth     <- view recursiveDepthL
   main      <- view mainL
   root      <- view directoryL
-  only      <- view onlyL
-  exclude   <- view excludeL
+  only      <- intercalate ", " . filter (/= []) . splitOn "," <$> view onlyL
+  exclude   <- intercalate ", " . filter (/= []) . splitOn "," <$> view excludeL
   logInfo
     . fromString
     . concat
@@ -63,7 +65,7 @@ logInput = do
   mkStrOnly x  = "including only " ++ x ++ " "
 
   mkStrExclude [] = " "
-  mkStrExclude x  = "excluding " ++ x
+  mkStrExclude x  = if null x then " " else "excluding " ++ x
 
   resolvePath "."  = "current directory "
   resolvePath ".." = "parent directory "

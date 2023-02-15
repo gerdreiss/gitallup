@@ -34,8 +34,8 @@ run = do
   Log.logInput
   recursive <- view recursiveL
   depth     <- view recursiveDepthL
-  only      <- filter (/= "") . splitOn "," <$> view onlyL
-  exclude   <- filter (/= "") . splitOn "," <$> view excludeL
+  only      <- filter (/= []) . splitOn "," <$> view onlyL
+  exclude   <- filter (/= []) . splitOn "," <$> view excludeL
   root      <- view directoryL
   liftIO (listRepos recursive depth only exclude root)
     >>= checkStatusCleanupOrUpdateRepos
@@ -58,8 +58,12 @@ listReposAndRest only excluded root =
 listDirectories :: [FilePath] -> [FilePath] -> FilePath -> IO [FilePath]
 listDirectories only excluded path = ifM
   (doesDirectoryExist path)
-  (fmap (path </>) . filter (`notElem` excluded) . filter (\p -> null only || p `elem` only) <$> listDirectory path)
+  (fmap (path </>) . filter shouldInclude <$> listDirectory path)
   (return [])
+  where
+    shouldInclude elm = isSelected elm && isNotExcluded elm
+    isSelected elm = null only || elm `elem` only
+    isNotExcluded elm = elm `notElem` excluded
 
 listNestedRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> [FilePath] -> IO [FilePath]
 listNestedRepos recursive depth only excluded subdirs
