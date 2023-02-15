@@ -15,6 +15,7 @@ import           Control.Parallel.Strategies    ( parList
                                                 , rpar
                                                 , using
                                                 )
+import           Data.List                      ( intersect )
 import           Data.List.Split                ( splitOn )
 import           RIO                     hiding ( force )
 import           RIO.Directory                  ( doesDirectoryExist
@@ -58,11 +59,14 @@ listReposAndRest only excluded root =
 listDirectories :: [FilePath] -> [FilePath] -> FilePath -> IO [FilePath]
 listDirectories only excluded path = ifM
   (doesDirectoryExist path)
-  (fmap (path </>) . filter shouldInclude <$> listDirectory path)
+  (fmap (path </>) . selectRepos only excluded <$> listDirectory path)
   (return [])
+
+selectRepos :: [FilePath] -> [FilePath] -> [FilePath] -> [FilePath]
+selectRepos only excluded dirs = filter shouldInclude dirs
   where
     shouldInclude elm = isSelected elm && isNotExcluded elm
-    isSelected elm = null only || elm `elem` only
+    isSelected elm = null only || null (dirs `intersect` only) || elm `elem` dirs && elm `elem` only
     isNotExcluded elm = elm `notElem` excluded
 
 listNestedRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> [FilePath] -> IO [FilePath]
