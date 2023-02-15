@@ -3,8 +3,8 @@
 ## Execute  
 
 With `stack exec -- gitallup --help` to see this text:
-  ~~~~
-    Update all GIT repos in directory
+~~~~
+Update all GIT repos in directory
 
 Usage: gitallup [--version] [--help] [-p|--path PATH] [-r|--recursive]
                 [-d|--depth NUMBER] [-S|--status] [-C|--clean]
@@ -35,4 +35,4 @@ Available options:
   -a,--actions FILE        Path to the file that contains actions for select
                            repositories
   -v,--verbose             Verbose output?
-  ~~~~
+~~~~
