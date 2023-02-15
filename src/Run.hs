@@ -15,14 +15,13 @@ import           Control.Parallel.Strategies    ( parList
                                                 , rpar
                                                 , using
                                                 )
-import           Data.List                      ( intersect )
 import           Data.List.Split                ( splitOn )
 import           RIO                     hiding ( force )
 import           RIO.Directory                  ( doesDirectoryExist
                                                 , listDirectory
                                                 , makeAbsolute
                                                 )
-import           RIO.FilePath                   ( (</>) )
+import           RIO.FilePath                   ( (</>), takeFileName )
 
 import           Actions
 import           Summary
@@ -48,26 +47,22 @@ run = do
 --
 listRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> FilePath -> IO [FilePath]
 listRepos recursive depth only excluded root = do
-  (repos, rest) <- listReposAndRest only excluded root
+  (repos, rest) <- listReposAndRest root
   nested        <- listNestedRepos recursive depth only excluded rest
-  return (repos ++ nested)
-
-listReposAndRest :: [FilePath] -> [FilePath] -> FilePath -> IO ([FilePath], [FilePath])
-listReposAndRest only excluded root =
-  makeAbsolute root >>= listDirectories only excluded >>= partitionM Git.isGitRepo
-
-listDirectories :: [FilePath] -> [FilePath] -> FilePath -> IO [FilePath]
-listDirectories only excluded path = ifM
-  (doesDirectoryExist path)
-  (fmap (path </>) . selectRepos only excluded <$> listDirectory path)
-  (return [])
-
-selectRepos :: [FilePath] -> [FilePath] -> [FilePath] -> [FilePath]
-selectRepos only excluded dirs = filter shouldInclude dirs
+  return . filter isNotExcluded . filter isSelected $ (repos ++ nested)
   where
-    shouldInclude elm = isSelected elm && isNotExcluded elm
-    isSelected elm = null only || null (dirs `intersect` only) || elm `elem` dirs && elm `elem` only
-    isNotExcluded elm = elm `notElem` excluded
+    isNotExcluded path = takeFileName path `notElem` excluded
+    isSelected path = null only || takeFileName path `elem` only
+
+listReposAndRest :: FilePath -> IO ([FilePath], [FilePath])
+listReposAndRest root =
+  makeAbsolute root >>= listDirectories >>= partitionM Git.isGitRepo
+
+listDirectories :: FilePath -> IO [FilePath]
+listDirectories path = ifM
+  (doesDirectoryExist path)
+  (fmap (path </>) <$> listDirectory path)
+  (return [])  
 
 listNestedRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> [FilePath] -> IO [FilePath]
 listNestedRepos recursive depth only excluded subdirs
