@@ -1,6 +1,6 @@
 module Types where
 
-import qualified Data.ByteString.Lazy.Char8    as C8     -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8      -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
 
 import           RIO
@@ -89,7 +89,7 @@ class HasCleanup env where
   cleanupL :: Lens' env Bool
 
 class HasDeleteBranches env where
-  deleteBranchesL :: Lens' env Bool  
+  deleteBranchesL :: Lens' env Bool
 
 class HasMain env where
   mainL :: Lens' env Bool
@@ -121,23 +121,20 @@ instance NFData GitOpError
 instance HasDirectory App where
   directoryL = appOptionsL . optionsDirectoryL
    where
-    appOptionsL = lens appOptions (\x y -> x { appOptions = y })
-    optionsDirectoryL =
-      lens optionsDirectory (\x y -> x { optionsDirectory = y })
+    appOptionsL       = lens appOptions (\x y -> x { appOptions = y })
+    optionsDirectoryL = lens optionsDirectory (\x y -> x { optionsDirectory = y })
 
 instance HasRecursive App where
   recursiveL = appOptionsL . optionsRecursiveL
    where
-    appOptionsL = lens appOptions (\x y -> x { appOptions = y })
-    optionsRecursiveL =
-      lens optionsRecursive (\x y -> x { optionsRecursive = y })
+    appOptionsL       = lens appOptions (\x y -> x { appOptions = y })
+    optionsRecursiveL = lens optionsRecursive (\x y -> x { optionsRecursive = y })
 
 instance HasRecursiveDepth App where
   recursiveDepthL = appOptionsL . optionsRecursiveDepthL
    where
-    appOptionsL = lens appOptions (\x y -> x { appOptions = y })
-    optionsRecursiveDepthL =
-      lens optionsRecursiveDepth (\x y -> x { optionsRecursiveDepth = y })
+    appOptionsL            = lens appOptions (\x y -> x { appOptions = y })
+    optionsRecursiveDepthL = lens optionsRecursiveDepth (\x y -> x { optionsRecursiveDepth = y })
 
 instance HasStatus App where
   statusL = appOptionsL . optionsStatusL
@@ -172,7 +169,7 @@ instance HasForce App where
 instance HasOnly App where
   onlyL = appOptionsL . optionsOnlyL
    where
-    appOptionsL     = lens appOptions (\x y -> x { appOptions = y })
+    appOptionsL  = lens appOptions (\x y -> x { appOptions = y })
     optionsOnlyL = lens optionsOnly (\x y -> x { optionsOnly = y })
 
 instance HasExclude App where
@@ -191,8 +188,7 @@ instance HasLogFunc App where
   logFuncL = lens appLogFunc (\x y -> x { appLogFunc = y })
 
 instance HasProcessContext App where
-  processContextL =
-    lens appProcessContext (\x y -> x { appProcessContext = y })
+  processContextL = lens appProcessContext (\x y -> x { appProcessContext = y })
 
 instance Show GitOpResultType where
   show Clean          = " has nothing to commit."
@@ -209,23 +205,12 @@ instance Show GitOpResult where
   show res = concat
     [ show (resultType res)
     , "\nResult text:\n"
-    , C8.unpack
-    . C8.intercalate "\n"
-    . take 8
-    . filter (not . C8.null)
-    . C8.lines
-    . resultText
-    $ res
+    , C8.unpack . C8.intercalate "\n" . take 8 . filter (not . C8.null) . C8.lines . resultText $ res
     , "\n\n"
     ]
 
 instance Show GitOpError where
-  show err = concat
-    [ "Update failed with\ncode    : "
-    , show (errorCode err)
-    , "\nmessage : "
-    , C8.unpack (errorMessage err)
-    ]
+  show err = concat ["Update failed with\ncode    : ", show (errorCode err), "\nmessage : ", C8.unpack (errorMessage err)]
 
 instance Show RepoUpdateResult where
   show res = concat
@@ -238,5 +223,4 @@ instance Show RepoUpdateResult where
 
 
 withResultType :: GitOpResultType -> RepoUpdateResult -> Bool
-withResultType resType result =
-  either (const False) ((== resType) . resultType) (updateErrorOrSuccess result)
+withResultType resType result = either (const False) ((== resType) . resultType) (updateErrorOrSuccess result)

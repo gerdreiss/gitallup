@@ -9,7 +9,7 @@ module Logging
   , error
   ) where
 
-import qualified Data.ByteString.Lazy.Char8    as C8 -- TODO replace this with RIO's package or function
+import qualified Data.ByteString.Lazy.Char8    as C8    -- TODO replace this with RIO's package or function
 
 import           Control.Monad.Extra            ( ifM )
 import           Data.List                      ( intercalate )
@@ -36,10 +36,13 @@ logInput = do
   logInfo
     . fromString
     . concat
-    $ [ if status then mkStrStatus
-        else if cleanup then mkStrCleanup
-        else if deleteBranches then mkStrDelete
-        else mkStrUpdate force
+    $ [ if status
+        then mkStrStatus
+        else if cleanup
+          then mkStrCleanup --
+          else if deleteBranches
+            then mkStrDelete --
+            else mkStrUpdate force
       , mkStrRecursive recursive depth
       , mkStrMain main
       , "GIT repos in "
@@ -81,19 +84,19 @@ logRepo :: FilePath -> RIO App ()
 logRepo repo = ifM
   (view statusL)
   (logMsg $ "checking status for repo: " <> repo)
-  (ifM (view cleanupL)
-       (logMsg $ "cleaning up repo: " <> repo)
-       (ifM (view deleteBranchesL)
-            (logMsg $ "deleting branches for repo: " <> repo)
-            (logMsg $ "updating repo: " <> repo)
-       )
+  (ifM
+    (view cleanupL)
+    (logMsg $ "cleaning up repo: " <> repo)
+    (ifM (view deleteBranchesL)
+         (logMsg $ "deleting branches for repo: " <> repo) --
+         (logMsg $ "updating repo: " <> repo)
+    )
   )
 
 --
 --
 logRes :: String -> GitOpResult -> RIO App ()
-logRes msg res =
-  logMsg $ concat ["Success => ", msg, " ", show (resultType res)]
+logRes msg res = logMsg $ concat ["Success => ", msg, " ", show (resultType res)]
 
 --
 --
@@ -103,8 +106,7 @@ logMsg = logInfo . fromString
 --
 --
 logErr :: GitOpError -> RIO App ()
-logErr err = error $ concat
-  ["Failed => ", show (errorCode err), " - ", C8.unpack (errorMessage err)]
+logErr err = error $ concat ["Failed => ", show (errorCode err), " - ", C8.unpack (errorMessage err)]
 
 --
 --

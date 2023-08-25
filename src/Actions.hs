@@ -1,6 +1,6 @@
 module Actions
-    ( checkAndExecuteActions
-    ) where
+  ( checkAndExecuteActions
+  ) where
 
 
 import qualified Logging                       as Log
@@ -30,20 +30,19 @@ import           Types
 --
 --
 checkAndExecuteActions :: [RepoUpdateResult] -> RIO App [RepoUpdateResult]
-checkAndExecuteActions results =
-    view actionsL >>= maybe (return results) executeOrReturn
-  where
-    executeOrReturn actions = ifM (liftIO $ doesFileExist actions)
-                                  (executeActions results actions)
-                                  (warnNotFound results actions)
+checkAndExecuteActions results = view actionsL >>= maybe (return results) executeOrReturn
+ where
+  executeOrReturn actions = ifM (liftIO $ doesFileExist actions)
+                                (executeActions results actions) --
+                                (warnNotFound results actions)
 
 --
 --
 executeActions :: [RepoUpdateResult] -> FilePath -> RIO App [RepoUpdateResult]
 executeActions results actionFile = do
-    config  <- liftIO $ load [Required actionFile]
-    actions <- liftIO $ getActions results config
-    mapM (uncurry executeActionIfDefined) actions
+  config  <- liftIO $ load [Required actionFile]
+  actions <- liftIO $ getActions results config
+  mapM (uncurry executeActionIfDefined) actions
 
 --
 --
@@ -54,74 +53,48 @@ getActions results config = mapM (getAction config) results
 --
 getAction :: Config -> RepoUpdateResult -> IO (RepoUpdateResult, Text)
 getAction config result
-    | withResultType Updated result = fmap
-        (maybe (result, T.empty) (result, ))
-        (lookup config . T.pack . takeFileName . updateResultRepo $ result)
-    | otherwise = return (result, T.empty)
+  | withResultType Updated result = fmap (maybe (result, T.empty) (result, ))
+                                         (lookup config . T.pack . takeFileName . updateResultRepo $ result)
+  | otherwise = return (result, T.empty)
 
 --
 --
 executeActionIfDefined :: RepoUpdateResult -> Text -> RIO App RepoUpdateResult
-executeActionIfDefined result action
-    | T.null action = return result
-    | otherwise     = prepareCommandLine action result >>= executeAction result
+executeActionIfDefined result action | T.null action = return result
+                                     | otherwise     = prepareCommandLine action result >>= executeAction result
 
 --
 --
 prepareCommandLine :: Text -> RepoUpdateResult -> RIO App [String]
 prepareCommandLine action result
-    | "[[REPO-PATH]]" `T.isInfixOf` action = do
-        let commandLine = words . T.unpack $ TP.replace
-                "[[REPO-PATH]]"
-                (T.pack $ updateResultRepo result)
-                action
-        Log.logMsg ("Executing " ++ unwords commandLine)
-        return commandLine
-    | otherwise = do
-        setCurrentDirectory (updateResultRepo result)
-        let commandLine = words . T.unpack $ action
-        Log.logMsg
-            $ concat
-                  [ "Executing "
-                  , unwords commandLine
-                  , " in "
-                  , updateResultRepo result
-                  ]
-        return commandLine
+  | "[[REPO-PATH]]" `T.isInfixOf` action = do
+    let commandLine = words . T.unpack $ TP.replace "[[REPO-PATH]]" (T.pack $ updateResultRepo result) action
+    Log.logMsg ("Executing " ++ unwords commandLine)
+    return commandLine
+  | otherwise = do
+    setCurrentDirectory (updateResultRepo result)
+    let commandLine = words . T.unpack $ action
+    Log.logMsg $ concat ["Executing ", unwords commandLine, " in ", updateResultRepo result]
+    return commandLine
 
 --
 --
 executeAction :: RepoUpdateResult -> [FilePath] -> RIO App RepoUpdateResult
 executeAction result [] = -- this should not happen at this point
-    Log.warn ("There is no action defined for " <> updateResultRepo result)
-        >> return result
-executeAction result [command] =
-    processActionResult result <$> proc command [] readProcess
-executeAction result (command : args) =
-    processActionResult result <$> proc command args readProcess
+  Log.warn ("There is no action defined for " <> updateResultRepo result) >> return result
+executeAction result [command       ] = processActionResult result <$> proc command [] readProcess
+executeAction result (command : args) = processActionResult result <$> proc command args readProcess
 
 --
 --
-processActionResult
-    :: RepoUpdateResult -> ReadProcessResult -> RepoUpdateResult
-processActionResult result (ExitSuccess     , out, _  ) = result
-    { updateErrorOrSuccess = Right $ GitOpResult
-                                 { resultType = ActionExecuted
-                                 , resultText =
-                                     "Repo updated and action executed: " <> out
-                                 }
-    }
-processActionResult result (ExitFailure code, _  , err) = result
-    { updateErrorOrSuccess = Left $ GitOpError
-                                 { errorCode    = code
-                                 , errorMessage =
-                                     "Repo updated but action failed: " <> err
-                                 }
-    }
+processActionResult :: RepoUpdateResult -> ReadProcessResult -> RepoUpdateResult
+processActionResult result (ExitSuccess, out, _) = result
+  { updateErrorOrSuccess = Right $ GitOpResult { resultType = ActionExecuted, resultText = "Repo updated and action executed: " <> out }
+  }
+processActionResult result (ExitFailure code, _, err) =
+  result { updateErrorOrSuccess = Left $ GitOpError { errorCode = code, errorMessage = "Repo updated but action failed: " <> err } }
 
 --
 --
 warnNotFound :: [RepoUpdateResult] -> FilePath -> RIO App [RepoUpdateResult]
-warnNotFound results actions =
-    Log.warn ("File " ++ actions ++ " not found. No actions will be executed.")
-        >> return results
+warnNotFound results actions = Log.warn ("File " ++ actions ++ " not found. No actions will be executed.") >> return results
