@@ -105,16 +105,14 @@ deleteBranches repos = concat <$> sequence (map deleteBranches0 repos `using` pa
 deleteBranches0 :: FilePath -> RIO App [RepoUpdateResult]
 deleteBranches0 repo = Log.logRepo repo >> do
   branches       <- fromRight [] <$> Git.listBranches repo
-  remoteBranches <- Log.logMsg ("Found branches " ++ show branches ++ "...") >>
-                      filterM (fmap (fromRight False) . Git.isRemoteBranch repo) branches
-  Log.logMsg ("Found remote branches " ++ show remoteBranches ++ "...") >>
-    mapM (deleteBranch repo) (branches \\ remoteBranches)
+  remoteBranches <- filterM (fmap (fromRight False) . Git.isRemoteBranch repo) branches
+  mapM (deleteBranch repo) (branches \\ remoteBranches)
 
 deleteBranch :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
 deleteBranch repo branch =
-  Log.logMsg ("Deleting branch " ++ C8.unpack branch ++ "...")
+  Log.logMsg ("Deleting branch '" ++ C8.unpack branch ++ "'...")
     >>  Git.deleteBranch repo branch
-    >>  generalSuccessResult repo (Just branch) "Done."
+    >>  deletedSuccessResult repo (Just branch) "Done."
 
 --
 -- Check status
@@ -217,12 +215,17 @@ switchBranchUpdate repo branch =
 errorResult :: FilePath -> GitOpError -> RIO App RepoUpdateResult
 errorResult repo = return . RepoUpdateResult repo Nothing . Left
 
-generalSuccessResult
-  :: FilePath -> Maybe B.ByteString -> B.ByteString -> RIO App RepoUpdateResult
-generalSuccessResult repo branch text = return $ RepoUpdateResult
+generalSuccessResult :: FilePath -> Maybe B.ByteString -> B.ByteString -> RIO App RepoUpdateResult
+generalSuccessResult repo branch text = typedSuccessResult  repo branch text GeneralSuccess
+
+deletedSuccessResult :: FilePath -> Maybe B.ByteString -> B.ByteString -> RIO App RepoUpdateResult
+deletedSuccessResult repo branch text = typedSuccessResult  repo branch text Deleted
+
+typedSuccessResult :: FilePath -> Maybe B.ByteString  -> B.ByteString -> GitOpResultType -> RIO App RepoUpdateResult  
+typedSuccessResult repo branch text resultType = return $ RepoUpdateResult
   { updateResultRepo     = repo
   , updateResultBranch   = branch
-  , updateErrorOrSuccess = Right GitOpResult { resultType = GeneralSuccess
+  , updateErrorOrSuccess = Right GitOpResult { resultType = resultType
                                              , resultText = text
                                              }
   }
