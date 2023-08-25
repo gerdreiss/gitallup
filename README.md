@@ -1,15 +1,17 @@
 # Update all GIT repos in directory
 
-## Execute  
+## Execute
 
 With `stack exec -- gitallup --help` to see this text:
-~~~~
+
+```
 Update all GIT repos in directory
 
 Usage: gitallup [--version] [--help] [-p|--path PATH] [-r|--recursive]
                 [-d|--depth NUMBER] [-S|--status] [-C|--clean]
-                [-m|--main-branch] [-f|--force] [-o|--only LIST]
-                [-x|--exclude LIST] [-a|--actions FILE] [-v|--verbose]
+                [-D|--delete-branches] [-m|--main-branch] [-f|--force]
+                [-o|--only LIST] [-x|--exclude LIST] [-a|--actions FILE]
+                [-v|--verbose]
 
   Walks through all subdirectories of the given or current directory, and checks
   the status or performs git pull on all GIT repos
@@ -24,6 +26,7 @@ Available options:
   -d,--depth NUMBER        The depth of directory recursion (default: -1)
   -S,--status              Check status of the repositories.
   -C,--clean               Clean up repository.
+  -D,--delete-branches     Delete branches that don't have a remote equivalent.
   -m,--main-branch         Switch all to main/default branch? Ignored when
                            --status/-S is passed as parameter.
   -f,--force               Force update overriding any local changes? Ignored
@@ -35,4 +38,4 @@ Available options:
   -a,--actions FILE        Path to the file that contains actions for select
                            repositories
   -v,--verbose             Verbose output?
-~~~~
+```
