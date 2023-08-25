@@ -20,6 +20,7 @@ data GitOpResultType
   = Clean
   | Dirty
   | CleanedUp
+  | Deleted
   | UpToDate
   | Updated
   | Reset
@@ -52,6 +53,7 @@ data Options = Options
   , optionsRecursiveDepth :: !Int
   , optionsStatus         :: !Bool
   , optionsCleanup        :: !Bool
+  , optionsDeleteBranches :: !Bool
   , optionsMain           :: !Bool
   , optionsForce          :: !Bool
   , optionsOnly           :: !String
@@ -85,6 +87,9 @@ class HasStatus env where
 
 class HasCleanup env where
   cleanupL :: Lens' env Bool
+
+class HasDeleteBranches env where
+  deleteBranchesL :: Lens' env Bool  
 
 class HasMain env where
   mainL :: Lens' env Bool
@@ -146,6 +151,12 @@ instance HasCleanup App where
     appOptionsL     = lens appOptions (\x y -> x { appOptions = y })
     optionsCleanupL = lens optionsCleanup (\x y -> x { optionsCleanup = y })
 
+instance HasDeleteBranches App where
+  deleteBranchesL = appOptionsL . optionsDeleteBranchesL
+   where
+    appOptionsL            = lens appOptions (\x y -> x { appOptions = y })
+    optionsDeleteBranchesL = lens optionsDeleteBranches (\x y -> x { optionsDeleteBranches = y })
+
 instance HasMain App where
   mainL = appOptionsL . optionsMainL
    where
@@ -186,7 +197,8 @@ instance HasProcessContext App where
 instance Show GitOpResultType where
   show Clean          = " has nothing to commit."
   show Dirty          = " has uncommitted changes."
-  show CleanedUp      = "cleaned successfully."
+  show CleanedUp      = " cleaned successfully."
+  show Deleted        = " deleted successfully."
   show Updated        = " updated successfully."
   show Reset          = " reset succesfully."
   show UpToDate       = " already up to date."

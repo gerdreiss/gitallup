@@ -23,21 +23,23 @@ import           Types
 --
 logInput :: RIO App ()
 logInput = do
-  status    <- view statusL
-  cleanup   <- view cleanupL
-  force     <- view forceL
-  recursive <- view recursiveL
-  depth     <- view recursiveDepthL
-  main      <- view mainL
-  root      <- view directoryL
-  only      <- intercalate ", " . filter (/= []) . splitOn "," <$> view onlyL
-  exclude   <- intercalate ", " . filter (/= []) . splitOn "," <$> view excludeL
+  status         <- view statusL
+  cleanup        <- view cleanupL
+  deleteBranches <- view deleteBranchesL
+  force          <- view forceL
+  recursive      <- view recursiveL
+  depth          <- view recursiveDepthL
+  main           <- view mainL
+  root           <- view directoryL
+  only           <- intercalate ", " . filter (/= []) . splitOn "," <$> view onlyL
+  exclude        <- intercalate ", " . filter (/= []) . splitOn "," <$> view excludeL
   logInfo
     . fromString
     . concat
-    $ [ if status
-        then mkStrStatus
-        else if cleanup then mkStrCleanup else mkStrUpdate force
+    $ [ if status then mkStrStatus
+        else if cleanup then mkStrCleanup
+        else if deleteBranches then mkStrDelete
+        else mkStrUpdate force
       , mkStrRecursive recursive depth
       , mkStrMain main
       , "GIT repos in "
@@ -48,6 +50,7 @@ logInput = do
  where
   mkStrStatus  = "Checking status "
   mkStrCleanup = "Cleaning "
+  mkStrDelete  = "Deleting branches in"
 
   mkStrUpdate True  = "Force updating "
   mkStrUpdate False = "Updating "
@@ -80,7 +83,10 @@ logRepo repo = ifM
   (logMsg $ "checking status for repo: " <> repo)
   (ifM (view cleanupL)
        (logMsg $ "cleaning up repo: " <> repo)
-       (logMsg $ "updating repo: " <> repo)
+       (ifM (view deleteBranchesL)
+            (logMsg $ "deleting branches for repo: " <> repo)
+            (logMsg $ "updating repo: " <> repo)
+       )
   )
 
 --

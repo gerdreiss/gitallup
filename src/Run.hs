@@ -15,6 +15,7 @@ import           Control.Parallel.Strategies    ( parList
                                                 , rpar
                                                 , using
                                                 )
+import           Data.List                      ( (\\) )
 import           Data.List.Split                ( splitOn )
 import           RIO                     hiding ( force )
 import           RIO.Directory                  ( doesDirectoryExist
@@ -38,7 +39,7 @@ run = do
   exclude   <- filter (/= []) . splitOn "," <$> view excludeL
   root      <- view directoryL
   liftIO (listRepos recursive depth only exclude root)
-    >>= checkStatusCleanupOrUpdateRepos
+    >>= checkStatusCleanupDeleteBranchesOrUpdateRepos
     >>= checkAndExecuteActions
     >>= printSummary
 
@@ -62,7 +63,7 @@ listDirectories :: FilePath -> IO [FilePath]
 listDirectories path = ifM
   (doesDirectoryExist path)
   (fmap (path </>) <$> listDirectory path)
-  (return [])  
+  (return [])
 
 listNestedRepos :: Bool -> Int -> [FilePath] -> [FilePath] -> [FilePath] -> IO [FilePath]
 listNestedRepos recursive depth only excluded subdirs
@@ -73,11 +74,17 @@ listNestedRepos recursive depth only excluded subdirs
 --
 -- Check git status of or clean up or update the repositories
 --
-checkStatusCleanupOrUpdateRepos :: [FilePath] -> RIO App [RepoUpdateResult]
-checkStatusCleanupOrUpdateRepos repos = ifM
-  (view statusL)
-  (checkStatusRepos repos)
-  (ifM (view cleanupL) (cleanupRepos repos) (updateRepos repos))
+checkStatusCleanupDeleteBranchesOrUpdateRepos :: [FilePath] -> RIO App [RepoUpdateResult]
+checkStatusCleanupDeleteBranchesOrUpdateRepos repos =
+  ifM (view statusL)
+      (checkStatusRepos repos)
+      (ifM (view cleanupL)
+           (cleanupRepos repos)
+           (ifM (view deleteBranchesL)
+                (deleteBranches repos)
+                (updateRepos repos)
+           )
+      )
 
 -- 
 -- Cleanup
@@ -88,6 +95,26 @@ cleanupRepos repos = sequence (map cleanupRepo repos `using` parList rpar)
 cleanupRepo :: FilePath -> RIO App RepoUpdateResult
 cleanupRepo repo =
   Log.logRepo repo >> RepoUpdateResult repo Nothing <$> Git.cleanRepo repo
+
+--
+-- Delete branches
+--
+deleteBranches :: [FilePath] -> RIO App [RepoUpdateResult]
+deleteBranches repos = concat <$> sequence (map deleteBranches0 repos `using` parList rpar)
+
+deleteBranches0 :: FilePath -> RIO App [RepoUpdateResult]
+deleteBranches0 repo = Log.logRepo repo >> do
+  branches       <- fromRight [] <$> Git.listBranches repo
+  remoteBranches <- Log.logMsg ("Found branches " ++ show branches ++ "...") >>
+                      filterM (fmap (fromRight False) . Git.isRemoteBranch repo) branches
+  Log.logMsg ("Found remote branches " ++ show remoteBranches ++ "...") >>
+    mapM (deleteBranch repo) (branches \\ remoteBranches)
+
+deleteBranch :: FilePath -> B.ByteString -> RIO App RepoUpdateResult
+deleteBranch repo branch =
+  Log.logMsg ("Deleting branch " ++ C8.unpack branch ++ "...")
+    >>  Git.deleteBranch repo branch
+    >>  generalSuccessResult repo (Just branch) "Done."
 
 --
 -- Check status

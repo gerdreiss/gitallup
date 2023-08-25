@@ -34,7 +34,8 @@ options =
     <*> recursive
     <*> recursiveDepth
     <*> status
-    <*> cleanup    
+    <*> cleanup
+    <*> deleteBranches
     <*> mainBranch
     <*> force
     <*> only
@@ -87,6 +88,14 @@ cleanup =
     ( long "clean"
         <> short 'C'
         <> help "Clean up repository."
+    )
+
+deleteBranches :: Parser Bool
+deleteBranches =
+  switch
+    ( long "delete-branches"
+        <> short 'D'
+        <> help "Delete branches that don't have a remote equivalent."
     )
 
 mainBranch :: Parser Bool

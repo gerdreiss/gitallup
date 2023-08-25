@@ -25,12 +25,14 @@ printSummary results = do
     Log.logMsg $ "Repos processed  : " ++ show (length newResults)
     Log.logMsg $ "Errors occurred  : " ++ show (length errors)
 
-    ifM
-        (view statusL)
+    ifM (view statusL)
         (printStatusSummary newResults)
         (ifM (view cleanupL)
              (printCleanupSummary newResults)
-             (printUpdateSummary newResults)
+             (ifM (view deleteBranchesL)
+                  (printDeleteSummary newResults)
+                  (printUpdateSummary newResults)
+             )
         )
 
 --
@@ -90,3 +92,16 @@ printCleanupSummary results = do
                              (updateErrorOrSuccess res)
 
 
+printDeleteSummary :: [RepoUpdateResult] -> RIO App ()
+printDeleteSummary results = do
+    let (errors, successes) = partition (isLeft . updateErrorOrSuccess) results
+        deleted             = filter isDeleted successes
+
+    Log.logMsg $ "Branches deleted : " ++ show (length deleted)
+
+    mapM_ pPrint errors
+    mapM_ pPrint deleted
+  where
+    isDeleted res = either (const False)
+                           ((== Deleted) . resultType)
+                           (updateErrorOrSuccess res)

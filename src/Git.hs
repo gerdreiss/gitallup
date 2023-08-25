@@ -6,14 +6,18 @@ module Git
   , cleanRepo
   , resetHard
   , updateBranch
+  , deleteBranch
   , branchStatus
   , isDirty
   , isGitRepo
   , isMainBranch
+  , isRemoteBranch
   ) where
 
 import qualified Data.ByteString.Lazy.Char8    as C8       -- TODO replace this with RIO's package or function
 import qualified RIO.ByteString.Lazy           as B
+
+import           Data.List.Extra                (trim)
 
 import           RIO
 import           RIO.Directory                  ( doesDirectoryExist )
@@ -53,6 +57,13 @@ isMainBranch repo branch = fmap (Just branch ==) <$> mainBranch repo
 
 --
 --
+isRemoteBranch :: FilePath -> B.ByteString -> RIO App (Either GitOpError Bool)
+isRemoteBranch repo branch =
+  _extractBranchIsRemote
+    <$> proc "git" ["-C", repo, "ls-remote", "--heads", "origin", "refs/heads/" ++ C8.unpack branch] readProcess
+
+--
+--
 isDirty :: FilePath -> RIO App (Either GitOpError Bool)
 isDirty repo =
   _extractBranchIsDirty <$> proc "git" ["-C", repo, "status"] readProcess
@@ -80,6 +91,13 @@ updateBranch repo =
   proc "git" ["-C", repo, "fetch", "--all"] readProcess
     >>  _extractGitOpErrorOrResult
     <$> proc "git" ["-C", repo, "pull"] readProcess
+
+--
+--
+deleteBranch :: FilePath -> B.ByteString -> RIO App (Either GitOpError GitOpResult)
+deleteBranch repo branch =
+  _extractGitOpErrorOrResult
+    <$> proc "git" ["-C", repo, "branch", "-D", C8.unpack branch] readProcess
 
 --
 --
@@ -145,6 +163,12 @@ _extractBranchIsDirty (ExitFailure code, _, err) = Left (GitOpError code err)
 
 --
 --
+_extractBranchIsRemote :: ReadProcessResult -> Either GitOpError Bool
+_extractBranchIsRemote (ExitSuccess, out, _)      = Right . not . null . trim $ C8.unpack out
+_extractBranchIsRemote (ExitFailure code, _, err) = Left (GitOpError code err)
+
+--
+--
 _extractGitOpErrorOrResult
   :: ReadProcessResult -> Either GitOpError GitOpResult
 _extractGitOpErrorOrResult (ExitSuccess, out, _) =
@@ -155,25 +179,24 @@ _extractGitOpErrorOrResult (ExitFailure code, _, err) =
 --
 --
 _extractGitOpResultType :: B.ByteString -> GitOpResultType
-_extractGitOpResultType result | isUpToDate result   = UpToDate
-                               | isUpdated result    = Updated
-                               | isReset result      = Reset
-                               | hasNoChanges result = Clean
-                               | hasChanges result   = Dirty
-                               | cleanedUp result    = CleanedUp
-                               | otherwise           = GeneralSuccess
+_extractGitOpResultType result | isUpToDate result    = UpToDate
+                               | isUpdated result     = Updated
+                               | isReset result       = Reset
+                               | hasNoChanges result  = Clean
+                               | hasChanges result    = Dirty
+                               | cleanedUp result     = CleanedUp
+                               | deletedBranch result = Deleted
+                               | otherwise            = GeneralSuccess
  where
   isUpToDate = B.isPrefixOf "Already up to date"
   isUpdated  = B.isPrefixOf "Updating"
   isReset    = B.isPrefixOf "HEAD is now at"
   cleanedUp  = B.isPrefixOf "Removing "
-  hasNoChanges res = or $ B.isPrefixOf "nothing to commit" <$> C8.lines res
-  hasChanges res = or $ isChange <$> C8.lines res
-  isChange line =
-    or
-      $   ($ line)
-      <$> [ B.isPrefixOf "Your branch is ahead of"
-          , B.isPrefixOf "Changes not staged for commit"
-          , B.isPrefixOf "Changes to be committed"
-          , B.isPrefixOf "Untracked files"
-          ]
+  deletedBranch = B.isPrefixOf "Deleted branch "
+  hasNoChanges res = any (B.isPrefixOf "nothing to commit") (C8.lines res)
+  hasChanges res = any isChange (C8.lines res)
+  isChange line = any ($ line) [ B.isPrefixOf "Your branch is ahead of"
+                               , B.isPrefixOf "Changes not staged for commit"
+                               , B.isPrefixOf "Changes to be committed"
+                               , B.isPrefixOf "Untracked files"
+                               ]
